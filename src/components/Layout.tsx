@@ -7,7 +7,8 @@ import {
   HandHeart, 
   LogOut, 
   User, 
-  HelpCircle 
+  HelpCircle,
+  PartyPopper
 } from "lucide-react";
 
 interface LayoutProps {
@@ -16,6 +17,7 @@ interface LayoutProps {
 
 const menuItems = [
   { icon: Calendar, label: "Calendário", path: "/calendario" },
+  { icon: PartyPopper, label: "Eventos", path: "/eventos" },
   { icon: Users, label: "Clientes", path: "/clientes" },
   { icon: FileText, label: "Relatórios", path: "/relatorios" },
   { icon: HandHeart, label: "Contratos", path: "/contratos" },
@@ -39,12 +41,12 @@ export const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <div className="w-64 bg-sidebar text-sidebar-foreground flex flex-col">
+      <div className="w-64 bg-primary text-primary-foreground flex flex-col">
         {/* Logo/Header */}
-        <div className="p-6 border-b border-sidebar-muted/20">
+        <div className="p-6 border-b border-primary-foreground/20">
           <Link to="/" className="block">
-            <h1 className="text-2xl font-bold text-white">MeuSalão</h1>
-            <p className="text-sm text-white/80 mt-1">Para Festa Casa de Festas</p>
+            <h1 className="text-2xl font-bold text-primary-foreground">MeuSalão</h1>
+            <p className="text-sm text-primary-foreground/80 mt-1">Para Festa Casa de Festas</p>
           </Link>
         </div>
 
@@ -57,8 +59,8 @@ export const Layout = ({ children }: LayoutProps) => {
                   to={item.path}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                     isActive(item.path)
-                      ? "bg-white/20 text-white"
-                      : "text-white/80 hover:bg-white/10 hover:text-white"
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground"
                   }`}
                 >
                   <item.icon size={20} />
@@ -70,13 +72,13 @@ export const Layout = ({ children }: LayoutProps) => {
         </nav>
 
         {/* Bottom Menu */}
-        <div className="p-4 border-t border-sidebar-muted/20">
+        <div className="p-4 border-t border-primary-foreground/20">
           <ul className="space-y-2">
             {bottomMenuItems.map((item) => (
               <li key={item.path}>
                 <Link
                   to={item.path}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground transition-all duration-200"
                 >
                   <item.icon size={20} />
                   <span className="font-medium">{item.label}</span>

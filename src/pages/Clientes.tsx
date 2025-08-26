@@ -6,13 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Edit, Eye } from "lucide-react";
-import { mockClientes } from "@/data/mockData";
+import { useAppContext } from "@/contexts/AppContext";
 import { Cliente } from "@/types";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Clientes() {
+  const { clientes, addCliente } = useAppContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<Partial<Cliente>>({
@@ -31,7 +32,7 @@ export default function Clientes() {
   });
   const { toast } = useToast();
 
-  const filteredClientes = mockClientes.filter(cliente =>
+  const filteredClientes = clientes.filter(cliente =>
     cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cliente.sobrenome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cliente.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -43,7 +44,16 @@ export default function Clientes() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate client creation
+    if (!formData.nome || !formData.sobrenome || !formData.cpf || !formData.email) {
+      toast({
+        title: "Erro no cadastro",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    addCliente(formData as Omit<Cliente, 'id' | 'createdAt'>);
     toast({
       title: "Cliente cadastrado com sucesso!",
       description: `${formData.nome} ${formData.sobrenome} foi adicionado ao sistema.`,
