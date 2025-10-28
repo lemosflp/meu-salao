@@ -129,10 +129,10 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{mockEventos.length}</div>
+            {/* <div className="text-2xl font-bold text-primary">{mockEventos.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
               +12% em relação ao mês anterior
-            </p>
+            </p> */}
           </CardContent>
         </Card>
 
@@ -143,12 +143,12 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            {/* <div className="text-2xl font-bold text-green-600">
               R$ {mockEventos.reduce((total, evento) => total + (evento.valor || 0), 0).toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               +8% em relação ao mês anterior
-            </p>
+            </p> */}
           </CardContent>
         </Card>
 
@@ -159,10 +159,10 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-event-secondary">15</div>
+            {/* <div className="text-2xl font-bold text-event-secondary">15</div>
             <p className="text-xs text-muted-foreground mt-1">
               +3 novos clientes este mês
-            </p>
+            </p> */}
           </CardContent>
         </Card>
       </div>
