@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ import { ptBR } from "date-fns/locale";
 
 export default function Calendario() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const navigate = useNavigate();
   
   // Get current week
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
@@ -45,10 +47,12 @@ export default function Calendario() {
           <h1 className="text-3xl font-bold text-foreground">Calendário</h1>
           <p className="text-muted-foreground">Gerencie seus eventos e compromissos</p>
         </div>
-        <Button className="bg-primary hover:bg-primary-hover text-primary-foreground">
-          <Plus size={16} className="mr-2" />
-          Cadastrar festa
-        </Button>
+        <Button className="bg-primary hover:bg-primary-hover text-primary-foreground"
+      onClick={() => navigate("/eventos", { state: { showForm: true } })}
+    >
+      <Plus size={16} className="mr-2" />
+      Cadastrar Evento
+    </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

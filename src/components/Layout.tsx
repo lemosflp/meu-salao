@@ -46,7 +46,7 @@ export const Layout = ({ children }: LayoutProps) => {
         <div className="p-6 border-b border-primary-foreground/20">
           <Link to="/" className="block">
             <h1 className="text-2xl font-bold text-primary-foreground">MeuSalão</h1>
-            <p className="text-sm text-primary-foreground/80 mt-1">Para Festa Casa de Festas</p>
+            <p className="text-sm text-primary-foreground/80 mt-1">Nome do salão</p>
           </Link>
         </div>
 
