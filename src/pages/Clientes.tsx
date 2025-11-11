@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Edit, Eye } from "lucide-react";
+import { Search, Plus, Edit } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Cliente } from "@/types";
 import { format, parseISO } from "date-fns";
@@ -13,7 +13,8 @@ import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Clientes() {
-  const { clientes, addCliente } = useAppContext();
+  const { clientes, addCliente, updateCliente } = useAppContext() as any;
+  const [editingClienteId, setEditingClienteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<Partial<Cliente>>({
@@ -31,6 +32,39 @@ export default function Clientes() {
     complemento: ""
   });
   const { toast } = useToast();
+  const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
+const [viewMode, setViewMode] = useState<'list' | 'view' | 'edit'>('list');
+
+const handleViewClick = (cliente: Cliente) => {
+  setSelectedCliente(cliente);
+  setViewMode('view');
+};
+
+const handleBackFromView = () => {
+  setSelectedCliente(null);
+  setViewMode('list');
+};
+
+const handleEditFromView = () => {
+  if (!selectedCliente) return;
+  setFormData({
+    nome: selectedCliente.nome,
+    sobrenome: selectedCliente.sobrenome,
+    cpf: selectedCliente.cpf,
+    sexo: selectedCliente.sexo,
+    dataNascimento: selectedCliente.dataNascimento,
+    numeroCelular: selectedCliente.numeroCelular,
+    numeroTelefone: selectedCliente.numeroTelefone,
+    email: selectedCliente.email,
+    estado: selectedCliente.estado,
+    cidade: selectedCliente.cidade,
+    endereco: selectedCliente.endereco,
+    complemento: selectedCliente.complemento,
+  });
+  setEditingClienteId(selectedCliente.id as string);
+  setShowForm(true);
+  setViewMode('edit');
+}
 
   const filteredClientes = clientes.filter(cliente =>
     cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -44,21 +78,37 @@ export default function Clientes() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+  
     if (!formData.nome || !formData.sobrenome || !formData.cpf || !formData.email) {
       toast({
-        title: "Erro no cadastro",
-        description: "Preencha todos os campos obrigatórios.",
-        variant: "destructive"
+        title: "Preencha os campos obrigatórios",
+        description: "Nome, sobrenome, CPF e email são obrigatórios.",
+        variant: "destructive",
       });
       return;
     }
-    
-    addCliente(formData as Omit<Cliente, 'id' | 'createdAt'>);
-    toast({
-      title: "Cliente cadastrado com sucesso!",
-      description: `${formData.nome} ${formData.sobrenome} foi adicionado ao sistema.`,
-    });
-    setShowForm(false);
+  
+    if (editingClienteId) {
+      // Atualizar cliente existente
+      if (typeof updateCliente === "function") {
+        updateCliente(editingPacoteId ? editingPacoteId : editingClienteId, {
+          ...formData,
+        });
+      } else {
+        // fallback: se não existir updateCliente, tente atualizar localmente (ajuste conforme seu contexto)
+        const idx = (clientes || []).findIndex((c: any) => c.id === editingClienteId);
+        if (idx !== -1) {
+          clientes[idx] = { ...clientes[idx], ...(formData as any) };
+        }
+      }
+      toast({ title: "Cadastro atualizado com sucesso" });
+    } else {
+      // Criar novo cliente
+      addCliente(formData as any);
+      toast({ title: "Cliente cadastrado com sucesso" });
+    }
+  
+    // reset e navegação de tela
     setFormData({
       nome: "",
       sobrenome: "",
@@ -73,6 +123,29 @@ export default function Clientes() {
       endereco: "",
       complemento: ""
     });
+    setShowForm(false);
+    setEditingClienteId(null);
+    setViewMode("list");
+    setSelectedCliente(null);
+  };
+
+  const handleEditClick = (cliente: Cliente) => {
+    setFormData({
+      nome: cliente.nome,
+      sobrenome: cliente.sobrenome,
+      cpf: cliente.cpf,
+      sexo: cliente.sexo,
+      dataNascimento: cliente.dataNascimento,
+      numeroCelular: cliente.numeroCelular,
+      numeroTelefone: cliente.numeroTelefone,
+      email: cliente.email,
+      estado: cliente.estado,
+      cidade: cliente.cidade,
+      endereco: cliente.endereco,
+      complemento: cliente.complemento,
+    });
+    setEditingClienteId(cliente.id as string);
+    setShowForm(true);
   };
 
   return (
@@ -259,70 +332,79 @@ export default function Clientes() {
       )}
 
       {/* Client List */}
-      {!showForm && (
-        <div className="space-y-4">
-          {filteredClientes.map((cliente) => (
-            <Card key={cliente.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-2">
-                      <h3 className="font-semibold text-lg">
-                        {cliente.nome} {cliente.sobrenome}
-                      </h3>
-                      <Badge variant="secondary" className="text-xs">
-                        {cliente.sexo === 'M' ? 'Masculino' : cliente.sexo === 'F' ? 'Feminino' : 'Outro'}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-muted-foreground">
-                      <div>
-                        <span className="font-medium">Email:</span> {cliente.email}
-                      </div>
-                      <div>
-                        <span className="font-medium">Celular:</span> {cliente.numeroCelular}
-                      </div>
-                      <div>
-                        <span className="font-medium">Cidade:</span> {cliente.cidade}, {cliente.estado}
-                      </div>
-                      <div>
-                        <span className="font-medium">Cadastrado:</span>{" "}
-                        {format(parseISO(cliente.createdAt), "dd/MM/yyyy", { locale: ptBR })}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button variant="ghost" size="sm">
-                      <Eye size={16} />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Edit size={16} />
-                    </Button>
-                  </div>
+      {viewMode === 'list' && (
+  <div className="space-y-4">
+    {filteredClientes.map((cliente) => (
+      <Card key={cliente.id} className="hover:shadow-md transition-shadow">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-4 mb-2">
+                <h3 className="font-semibold text-lg">
+                  {cliente.nome} {cliente.sobrenome}
+                </h3>
+                <Badge variant="secondary" className="text-xs">
+                  {cliente.sexo === 'M' ? 'Masculino' : cliente.sexo === 'F' ? 'Feminino' : 'Outro'}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                <div>
+                  <span className="font-medium">Email:</span> {cliente.email}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+                <div>
+                  <span className="font-medium">Celular:</span> {cliente.numeroCelular}
+                </div>
+                <div>
+                  <span className="font-medium">Cidade:</span> {cliente.cidade}, {cliente.estado}
+                </div>
+                <div>
+                  <span className="font-medium">Cadastrado:</span>{" "}
+                  {format(parseISO(cliente.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 ml-4">
+              <Button variant="ghost" size="sm" onClick={() => handleViewClick(cliente)}>
+                <Edit size={16} />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    ))}
+  </div>
+)}
 
-          {filteredClientes.length === 0 && (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <div className="text-muted-foreground">
-                  {searchTerm ? "Nenhum cliente encontrado com os critérios de busca." : "Nenhum cliente cadastrado ainda."}
-                </div>
-                {!searchTerm && (
-                  <Button 
-                    className="mt-4 bg-primary hover:bg-primary-hover text-primary-foreground"
-                    onClick={() => setShowForm(true)}
-                  >
-                    <Plus size={16} className="mr-2" />
-                    Cadastrar primeiro cliente
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
+{/* Visualizar Cliente */}
+{viewMode === 'view' && selectedCliente && (
+  <Card className="p-6">
+    <CardHeader>
+      <CardTitle className="text-2xl">
+        {selectedCliente.nome} {selectedCliente.sobrenome}
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div><span className="font-medium">CPF:</span> {selectedCliente.cpf}</div>
+        <div><span className="font-medium">Sexo:</span> {selectedCliente.sexo}</div>
+        <div><span className="font-medium">Email:</span> {selectedCliente.email}</div>
+        <div><span className="font-medium">Celular:</span> {selectedCliente.numeroCelular}</div>
+        <div><span className="font-medium">Telefone:</span> {selectedCliente.numeroTelefone}</div>
+        <div><span className="font-medium">Nascimento:</span> {selectedCliente.dataNascimento}</div>
+        <div className="col-span-1 md:col-span-2"><span className="font-medium">Endereço:</span> {selectedCliente.endereco} {selectedCliente.complemento}</div>
+        <div><span className="font-medium">Cidade/Estado:</span> {selectedCliente.cidade}, {selectedCliente.estado}</div>
+        <div><span className="font-medium">Cadastrado:</span> {format(parseISO(selectedCliente.createdAt), "dd/MM/yyyy", { locale: ptBR })}</div>
+      </div>
+
+      <div className="mt-4 flex gap-2">
+        <Button onClick={handleBackFromView} className="px-4">Voltar</Button>
+        <Button onClick={handleEditFromView} className="bg-primary hover:bg-primary-hover text-primary-foreground px-4">
+          Editar
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+)}
     </div>
   );
 }

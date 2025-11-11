@@ -22,7 +22,7 @@ export default function Ajuda() {
     },
     {
       question: "Como criar um evento no calendário?",
-      answer: "Na tela de Calendário, clique em 'Cadastrar festa' e preencha as informações do evento, incluindo data, horário e cliente.",
+      answer: "Na tela de Calendário, clique em 'Cadastrar Evento' e preencha as informações do evento, incluindo data, horário e cliente.",
       category: "Eventos"
     },
     {

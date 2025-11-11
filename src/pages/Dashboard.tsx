@@ -113,7 +113,7 @@ export default function Dashboard() {
               className="w-full h-auto p-6 bg-primary hover:bg-primary-hover text-primary-foreground flex items-center justify-between text-lg font-semibold rounded-xl"
               onClick={() => navigate("/calendario")}
             >
-              <span>Cadastrar festas</span>
+              <span>Cadastrar Eventos</span>
               <ArrowRight size={24} />
             </Button>
           </CardContent>

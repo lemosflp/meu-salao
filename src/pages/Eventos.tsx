@@ -31,6 +31,82 @@ export default function Eventos() {
   });
   const { toast } = useToast();
 
+  type Pacote = {
+    id: string;
+    nome: string;
+    duracaoHoras: number;
+    descricao?: string;
+  };
+  
+  const [pacotes, setPacotes] = useState<Pacote[]>([]);
+  const [showPackageForm, setShowPackageForm] = useState(false);
+  const [pacoteForm, setPacoteForm] = useState({
+    nome: "",
+    duracaoHoras: "",
+    descricao: "",
+  });
+const [editingPacoteId, setEditingPacoteId] = useState<string | null>(null);
+  
+  const handlePacoteChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target as HTMLInputElement;
+    setPacoteForm(prev => ({
+      ...prev,
+      [name]: name === "duracaoHoras" ? Number(value) : value,
+    }));
+  };
+  
+  const handleAddPacote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pacoteForm.nome.trim()) return;
+  
+    if (editingPacoteId) {
+      // editar existente
+      setPacotes(prev =>
+        prev.map(p =>
+          p.id === editingPacoteId
+            ? {
+                ...p,
+                nome: pacoteForm.nome.trim(),
+                duracaoHoras: Number(pacoteForm.duracaoHoras) || 0,
+                descricao: pacoteForm.descricao?.trim(),
+              }
+            : p
+        )
+      );
+      setEditingPacoteId(null);
+    } else {
+      // criar novo
+      const novo: Pacote = {
+        id: String(Date.now()),
+        nome: pacoteForm.nome.trim(),
+        duracaoHoras: Number(pacoteForm.duracaoHoras) || 0,
+        descricao: pacoteForm.descricao?.trim(),
+      };
+      setPacotes(prev => [novo, ...prev]);
+    }
+  
+    setPacoteForm({ nome: "", duracaoHoras: "", descricao: "" });
+    setShowPackageForm(false);
+  };
+
+const handleEditPacote = (p: Pacote) => {
+  setPacoteForm({
+    nome: p.nome,
+    duracaoHoras: String(p.duracaoHoras),
+    descricao: p.descricao ?? "",
+  });
+  setEditingPacoteId(p.id);
+  setShowPackageForm(true);
+};
+
+const handleCancelEdit = () => {
+  setEditingPacoteId(null);
+  setPacoteForm({ nome: "", duracaoHoras: "", descricao: "" });
+  setShowPackageForm(false);
+};
+  
+  const handleRemovePacote = (id: string) => setPacotes(prev => prev.filter(p => p.id !== id));
+
   const filteredEventos = eventos.filter(evento =>
     evento.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     evento.clienteNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -108,12 +184,20 @@ export default function Eventos() {
           <h1 className="text-3xl font-bold text-foreground">Eventos</h1>
           <p className="text-muted-foreground">Gerencie seus eventos e festas</p>
         </div>
-        <Button 
+   
+        <Button
+  className="bg-primary hover:bg-primary-hover text-primary-foreground px-8"
+  onClick={() => setShowPackageForm(prev => !prev)}
+>
+  <Plus size={16} className="mr-2" />
+  Cadastrar Pacotes
+</Button>
+<Button 
           className="bg-primary hover:bg-primary-hover text-primary-foreground"
           onClick={() => setShowForm(!showForm)}
         >
           <Plus size={16} className="mr-2" />
-          {showForm ? 'Cancelar' : 'Novo Evento'}
+          {showForm ? 'Cancelar' : 'Cadastrar Evento'}
         </Button>
       </div>
 
@@ -248,6 +332,86 @@ export default function Eventos() {
           </CardContent>
         </Card>
       )}
+{/* Formulário de Pacotes */}
+{showPackageForm && (
+  <form onSubmit={handleAddPacote} className="mb-6 p-4 border rounded bg-card">
+    <h2 className="text-lg font-semibold mb-2">
+      {editingPacoteId ? "Editar Pacote" : "Novo Pacote"}
+    </h2>
+
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <input
+        name="nome"
+        value={pacoteForm.nome}
+        onChange={handlePacoteChange}
+        placeholder="Nome do pacote"
+        className="p-2 border rounded col-span-2"
+        required
+      />
+
+      <input
+        name="duracaoHoras"
+        type="number"
+        min={1}
+        value={pacoteForm.duracaoHoras}
+        onChange={handlePacoteChange}
+        className="p-2 border rounded"
+        placeholder="Duração (horas)"
+      />
+
+      <textarea
+        name="descricao"
+        value={pacoteForm.descricao}
+        onChange={handlePacoteChange}
+        placeholder="Descrição (opcional)"
+        className="p-2 border rounded col-span-3"
+      />
+    </div>
+
+    <div className="mt-3 flex gap-2">
+      <button type="submit" className="bg-primary text-white px-4 py-2 rounded">
+        {editingPacoteId ? "Salvar Alterações" : "Salvar Pacote"}
+      </button>
+      <button
+        type="button"
+        className="bg-muted px-4 py-2 rounded"
+        onClick={editingPacoteId ? handleCancelEdit : () => setShowPackageForm(false)}
+      >
+        {editingPacoteId ? "Cancelar Edição" : "Cancelar"}
+      </button>
+    </div>
+  </form>
+)}
+
+{/* Lista de Pacotes */}
+<section className="mb-6">
+  <h3 className="text-lg font-medium mb-2">Pacotes Criados</h3>
+  {pacotes.length === 0 ? (
+    <div className="text-sm text-muted-foreground">Nenhum pacote cadastrado ainda.</div>
+  ) : (
+    <ul className="space-y-3">
+      {pacotes.map(p => (
+  <li key={p.id} className="p-3 border rounded flex justify-between items-start">
+    <div>
+      <div className="font-semibold">{p.nome}</div>
+      <div className="text-sm text-muted-foreground">
+        {p.duracaoHoras}h
+      </div>
+      {p.descricao && <div className="mt-1 text-sm">{p.descricao}</div>}
+    </div>
+    <div className="flex items-center">
+      <button onClick={() => handleEditPacote(p)} className="text-blue-600 hover:underline mr-3">
+        Editar
+      </button>
+      <button onClick={() => handleRemovePacote(p.id)} className="text-red-600 hover:underline">
+        Remover
+      </button>
+    </div>
+  </li>
+))}
+    </ul>
+  )}
+</section>
 
       {/* Event List */}
       {!showForm && (
