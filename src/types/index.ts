@@ -28,7 +28,7 @@ export interface Evento {
   observacoes?: string;
   valor: number;
 
-  // novos campos
+  // campos usados na tela atual
   pacoteId?: string;
   convidados?: number;
   decoracao?: string;
@@ -37,6 +37,18 @@ export interface Evento {
   adicionaisIds?: string[];
   valorEntrada?: number;
   formaPagamento?: string;
+
+  // novo: lista de aniversariantes / homenageados
+  aniversariantes: {
+    nome: string;
+    idade?: number;
+  }[];
+
+  // novo: observações específicas de adicionais
+  adicionaisObservacoes?: {
+    adicionalId: string;
+    observacao: string;
+  }[];
 }
 
 export interface Contrato {

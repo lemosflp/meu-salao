@@ -9,6 +9,8 @@ interface AppContextType {
   addCliente: (cliente: Omit<Cliente, 'id' | 'createdAt'>) => void;
   addEvento: (evento: Omit<Evento, 'id'>) => void;
   addContrato: (contrato: Omit<Contrato, 'id'>) => void;
+  updateEvento: (id: string, data: Partial<Omit<Evento, "id">>) => void;
+  removeEvento: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -43,6 +45,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setEventos(prev => [...prev, evento]);
   };
 
+  const updateEvento = (id: string, data: Partial<Omit<Evento, "id">>) => {
+    setEventos(prev =>
+      prev.map(ev => (ev.id === id ? { ...ev, ...data } : ev))
+    );
+  };
+
+  const removeEvento = (id: string) => {
+    setEventos(prev => prev.filter(ev => ev.id !== id));
+  };
+
   const addContrato = (novoContrato: Omit<Contrato, 'id'>) => {
     const contrato: Contrato = {
       ...novoContrato,
@@ -59,6 +71,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       addCliente,
       addEvento,
       addContrato,
+      updateEvento,
+      removeEvento,
     }}>
       {children}
     </AppContext.Provider>
