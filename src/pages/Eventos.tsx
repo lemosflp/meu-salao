@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,15 +8,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Calendar, Clock, MapPin } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
+import { usePacotesContext } from "@/contexts/PacotesContext";
+import { useAdicionaisContext } from "@/contexts/AdicionaisContext";
+import { useEquipesContext } from "@/contexts/EquipesContext";
 import { Evento } from "@/types";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export default function Eventos() {
   const { eventos, clientes, addEvento } = useAppContext();
+  const { pacotes } = usePacotesContext();
+  const { adicionais } = useAdicionaisContext();
+  const { equipes } = useEquipesContext();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
+
   const [formData, setFormData] = useState<Partial<Evento>>({
     titulo: "",
     clienteId: "",
@@ -27,85 +36,23 @@ export default function Eventos() {
     tipo: "aniversario",
     status: "pendente",
     observacoes: "",
-    valor: 0
+    valor: null,
+    pacoteId: "",
+    convidados: null,
+    decoracao: "",
+    equipeId: "",
+    equipeProfissionais: [],
+    adicionaisIds: [],
+    valorEntrada: null,
+    formaPagamento: "",
   });
+
+  const [eventoEquipeProfissionais, setEventoEquipeProfissionais] = useState<
+    { id: string; nome: string; quantidade: number }[]
+  >([]);
+
   const { toast } = useToast();
-
-  type Pacote = {
-    id: string;
-    nome: string;
-    duracaoHoras: number;
-    descricao?: string;
-  };
-  
-  const [pacotes, setPacotes] = useState<Pacote[]>([]);
-  const [showPackageForm, setShowPackageForm] = useState(false);
-  const [pacoteForm, setPacoteForm] = useState({
-    nome: "",
-    duracaoHoras: "",
-    descricao: "",
-  });
-const [editingPacoteId, setEditingPacoteId] = useState<string | null>(null);
-  
-  const handlePacoteChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target as HTMLInputElement;
-    setPacoteForm(prev => ({
-      ...prev,
-      [name]: name === "duracaoHoras" ? Number(value) : value,
-    }));
-  };
-  
-  const handleAddPacote = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pacoteForm.nome.trim()) return;
-  
-    if (editingPacoteId) {
-      // editar existente
-      setPacotes(prev =>
-        prev.map(p =>
-          p.id === editingPacoteId
-            ? {
-                ...p,
-                nome: pacoteForm.nome.trim(),
-                duracaoHoras: Number(pacoteForm.duracaoHoras) || 0,
-                descricao: pacoteForm.descricao?.trim(),
-              }
-            : p
-        )
-      );
-      setEditingPacoteId(null);
-    } else {
-      // criar novo
-      const novo: Pacote = {
-        id: String(Date.now()),
-        nome: pacoteForm.nome.trim(),
-        duracaoHoras: Number(pacoteForm.duracaoHoras) || 0,
-        descricao: pacoteForm.descricao?.trim(),
-      };
-      setPacotes(prev => [novo, ...prev]);
-    }
-  
-    setPacoteForm({ nome: "", duracaoHoras: "", descricao: "" });
-    setShowPackageForm(false);
-  };
-
-const handleEditPacote = (p: Pacote) => {
-  setPacoteForm({
-    nome: p.nome,
-    duracaoHoras: String(p.duracaoHoras),
-    descricao: p.descricao ?? "",
-  });
-  setEditingPacoteId(p.id);
-  setShowPackageForm(true);
-};
-
-const handleCancelEdit = () => {
-  setEditingPacoteId(null);
-  setPacoteForm({ nome: "", duracaoHoras: "", descricao: "" });
-  setShowPackageForm(false);
-};
-  
-  const handleRemovePacote = (id: string) => setPacotes(prev => prev.filter(p => p.id !== id));
+  const navigate = useNavigate();
 
   const filteredEventos = eventos.filter(evento =>
     evento.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -113,7 +60,7 @@ const handleCancelEdit = () => {
     evento.tipo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleInputChange = (field: keyof Evento, value: string | number) => {
+  const handleInputChange = (field: keyof Evento, value: string | number | string[] | undefined) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -123,6 +70,98 @@ const handleCancelEdit = () => {
       ...prev,
       clienteId,
       clienteNome: cliente ? `${cliente.nome} ${cliente.sobrenome}` : ""
+    }));
+  };
+
+  const handlePacoteSelect = (pacoteId: string) => {
+    const pacote = pacotes.find(p => p.id === pacoteId);
+    setFormData(prev => ({
+      ...prev,
+      pacoteId,
+      convidados: prev.convidados, // mantém o que o usuário já tinha digitado
+    }));
+  };
+
+  const handleEquipeSelect = (equipeId: string) => {
+    const equipe = equipes.find(e => e.id === equipeId);
+    setFormData(prev => ({
+      ...prev,
+      equipeId,
+    }));
+    if (equipe) {
+      setEventoEquipeProfissionais(
+        equipe.profissionais.map(p => ({
+          id: p.id,
+          nome: p.nome,
+          quantidade: p.quantidade,
+        }))
+      );
+    } else {
+      setEventoEquipeProfissionais([]);
+    }
+  };
+
+  const handleAdicionalToggle = (adicionalId: string) => {
+    setFormData(prev => {
+      const current = prev.adicionaisIds || [];
+      const exists = current.includes(adicionalId);
+      return {
+        ...prev,
+        adicionaisIds: exists ? current.filter(id => id !== adicionalId) : [...current, adicionalId],
+      };
+    });
+  };
+
+  const handleEquipeProfissionalChange = (id: string, quantidade: number) => {
+    setEventoEquipeProfissionais(prev =>
+      prev.map(p => (p.id === id ? { ...p, quantidade } : p))
+    );
+  };
+
+  const selectedPacote = useMemo(
+    () => (formData.pacoteId ? pacotes.find(p => p.id === formData.pacoteId) || undefined : undefined),
+    [formData.pacoteId, pacotes]
+  );
+
+  const selecionadosAdicionais = useMemo(
+    () =>
+      (formData.adicionaisIds || []).map(id => adicionais.find(a => a.id === id)).filter(Boolean),
+    [formData.adicionaisIds, adicionais]
+  ) as typeof adicionais;
+
+  const diffHorasPacote = useMemo(() => {
+    if (!selectedPacote || !formData.horaInicio || !formData.horaFim) return { extra: 0, hasExtra: false };
+
+    const [hiH, hiM] = formData.horaInicio.split(":").map(Number);
+    const [hfH, hfM] = formData.horaFim.split(":").map(Number);
+    const inicioMin = hiH * 60 + hiM;
+    const fimMin = hfH * 60 + hfM;
+    if (fimMin <= inicioMin) return { extra: 0, hasExtra: false };
+
+    const duracaoMin = fimMin - inicioMin;
+    const duracaoHoras = duracaoMin / 60;
+    const extra = Math.max(0, duracaoHoras - selectedPacote.duracaoHoras);
+    return { extra, hasExtra: extra > 0.01 };
+  }, [selectedPacote, formData.horaInicio, formData.horaFim]);
+
+  const valorCalculado = useMemo(() => {
+    if (!selectedPacote) return 0;
+
+    const base = selectedPacote.valorBase;
+    const convidadosEvento = formData.convidados || selectedPacote.convidadosBase;
+    const excedente = Math.max(0, convidadosEvento - selectedPacote.convidadosBase);
+    const valorExcedente = excedente * selectedPacote.valorPorPessoa;
+
+    const valorAdicionais = selecionadosAdicionais.reduce((sum, a) => sum + a.valor, 0);
+
+    return base + valorExcedente + valorAdicionais;
+  }, [selectedPacote, formData.convidados, selecionadosAdicionais]);
+
+  const handleConvidadosChange = (valorStr: string) => {
+    const valor = Number(valorStr) || 0;
+    setFormData(prev => ({
+      ...prev,
+      convidados: valor,
     }));
   };
 
@@ -137,11 +176,43 @@ const handleCancelEdit = () => {
       return;
     }
 
-    addEvento(formData as Omit<Evento, 'id'>);
+    if (selectedPacote && (formData.convidados || 0) < selectedPacote.convidadosBase) {
+      toast({
+        title: "Número de convidados inválido",
+        description: `O pacote selecionado possui mínimo de ${selectedPacote.convidadosBase} convidados.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const payload: Omit<Evento, "id"> = {
+      titulo: formData.titulo!,
+      clienteId: formData.clienteId!,
+      clienteNome: formData.clienteNome || "",
+      data: formData.data!,
+      horaInicio: formData.horaInicio!,
+      horaFim: formData.horaFim,
+      tipo: formData.tipo || "aniversario",
+      status: formData.status || "pendente",
+      observacoes: formData.observacoes || "",
+      valor: valorCalculado,
+      pacoteId: formData.pacoteId,
+      convidados: formData.convidados,
+      decoracao: formData.decoracao,
+      equipeId: formData.equipeId,
+      equipeProfissionais: eventoEquipeProfissionais,
+      adicionaisIds: formData.adicionaisIds || [],
+      valorEntrada: formData.valorEntrada || 0,
+      formaPagamento: formData.formaPagamento || "",
+    };
+
+    addEvento(payload);
+
     toast({
       title: "Evento cadastrado com sucesso!",
       description: `${formData.titulo} foi adicionado ao calendário.`,
     });
+
     setShowForm(false);
     setFormData({
       titulo: "",
@@ -153,8 +224,17 @@ const handleCancelEdit = () => {
       tipo: "aniversario",
       status: "pendente",
       observacoes: "",
-      valor: 0
+      valor: 0,
+      pacoteId: "",
+      convidados: 0,
+      decoracao: "",
+      equipeId: "",
+      equipeProfissionais: [],
+      adicionaisIds: [],
+      valorEntrada: 0,
+      formaPagamento: "",
     });
+    setEventoEquipeProfissionais([]);
   };
 
   const getStatusColor = (status: string) => {
@@ -178,30 +258,31 @@ const handleCancelEdit = () => {
 
   return (
     <div className="p-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Eventos</h1>
           <p className="text-muted-foreground">Gerencie seus eventos e festas</p>
         </div>
-   
-        <Button
-  className="bg-primary hover:bg-primary-hover text-primary-foreground px-8"
-  onClick={() => setShowPackageForm(prev => !prev)}
->
-  <Plus size={16} className="mr-2" />
-  Cadastrar Pacotes
-</Button>
-<Button 
-          className="bg-primary hover:bg-primary-hover text-primary-foreground"
-          onClick={() => setShowForm(!showForm)}
-        >
-          <Plus size={16} className="mr-2" />
-          {showForm ? 'Cancelar' : 'Cadastrar Evento'}
-        </Button>
+
+        <div className="flex gap-2">
+          <Button
+            className="bg-primary hover:bg-primary-hover text-primary-foreground px-8"
+            onClick={() => navigate("/pacotes")}
+          >
+            <Plus size={16} className="mr-2" />
+            Gerenciar pacotes
+          </Button>
+
+          <Button
+            className="bg-primary hover:bg-primary-hover text-primary-foreground"
+            onClick={() => setShowForm(!showForm)}
+          >
+            <Plus size={16} className="mr-2" />
+            {showForm ? "Cancelar" : "Cadastrar Evento"}
+          </Button>
+        </div>
       </div>
 
-      {/* Search */}
       {!showForm && (
         <Card className="mb-6">
           <CardContent className="p-4">
@@ -218,42 +299,50 @@ const handleCancelEdit = () => {
         </Card>
       )}
 
-      {/* Event Form */}
       {showForm && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Cadastrar evento</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="titulo">Título do Evento: <span className="text-red-500">*</span></Label>
-                <Input
-                  id="titulo"
-                  required
-                  value={formData.titulo}
-                  onChange={(e) => handleInputChange("titulo", e.target.value)}
-                  placeholder="Ex: Aniversário João - 30 anos"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="cliente">Cliente: <span className="text-red-500">*</span></Label>
-                <Select value={formData.clienteId} onValueChange={handleClienteSelect}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clientes.map((cliente) => (
-                      <SelectItem key={cliente.id} value={cliente.id}>
-                        {cliente.nome} {cliente.sobrenome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="cliente">Cliente: <span className="text-red-500">*</span></Label>
+                  <Select value={formData.clienteId} onValueChange={handleClienteSelect}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o cliente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clientes.map((cliente) => (
+                        <SelectItem key={cliente.id} value={cliente.id}>
+                          {cliente.nome} {cliente.sobrenome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label>Pacote:</Label>
+                  <Select
+                    value={formData.pacoteId}
+                    onValueChange={handlePacoteSelect}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o pacote" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pacotes.map(p => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.nome} ({p.duracaoHoras}h / {p.convidadosBase} convidados)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
                   <Label htmlFor="data">Data: <span className="text-red-500">*</span></Label>
                   <Input
@@ -264,52 +353,172 @@ const handleCancelEdit = () => {
                     onChange={(e) => handleInputChange("data", e.target.value)}
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="horaInicio">Início: <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="horaInicio"
+                      type="time"
+                      required
+                      value={formData.horaInicio}
+                      onChange={(e) => handleInputChange("horaInicio", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="horaFim">Fim:</Label>
+                    <Input
+                      id="horaFim"
+                      type="time"
+                      value={formData.horaFim}
+                      onChange={(e) => handleInputChange("horaFim", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {selectedPacote && diffHorasPacote.hasExtra && (
+                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                  O horário selecionado excede o tempo do pacote em{" "}
+                  <strong>{diffHorasPacote.extra.toFixed(2)}h</strong> (hora extra).
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="horaInicio">Hora Início: <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="convidados">Convidados:</Label>
                   <Input
-                    id="horaInicio"
-                    type="time"
-                    required
-                    value={formData.horaInicio}
-                    onChange={(e) => handleInputChange("horaInicio", e.target.value)}
+                    id="convidados"
+                    type="number"
+                    value={formData.convidados ?? ""}
+                    onChange={(e) => handleConvidadosChange(e.target.value)}
+                    placeholder={
+                      selectedPacote
+                        ? `Mínimo ${selectedPacote.convidadosBase}`
+                        : "Quantidade de convidados"
+                    }
                   />
                 </div>
                 <div>
-                  <Label htmlFor="horaFim">Hora Fim:</Label>
-                  <Input
-                    id="horaFim"
-                    type="time"
-                    value={formData.horaFim}
-                    onChange={(e) => handleInputChange("horaFim", e.target.value)}
+                  <Label htmlFor="decoracao">Decoração:</Label>
+                  <Textarea
+                    id="decoracao"
+                    value={formData.decoracao || ""}
+                    onChange={(e) => handleInputChange("decoracao", e.target.value)}
+                    placeholder="Descreva a decoração desejada"
                   />
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label>Equipe:</Label>
+                <Select
+                  value={formData.equipeId}
+                  onValueChange={handleEquipeSelect}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a equipe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {equipes.map(equipe => (
+                      <SelectItem key={equipe.id} value={equipe.id}>
+                        {equipe.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {eventoEquipeProfissionais.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    {eventoEquipeProfissionais.map(p => (
+                      <div
+                        key={p.id}
+                        className="flex justify-between items-center text-sm border rounded px-3 py-2 bg-muted/60"
+                      >
+                        <span className="font-medium">{p.nome}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Qtd.</span>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={p.quantidade}
+                            onChange={e =>
+                              handleEquipeProfissionalChange(
+                                p.id,
+                                Number(e.target.value) || 0
+                              )
+                            }
+                            className="w-16 h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Adicionais:</Label>
+                {adicionais.length === 0 ? (
+                  <div className="text-xs text-muted-foreground">
+                    Nenhum adicional cadastrado. Cadastre em Pacotes &gt; Adicionais.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {adicionais.map(a => {
+                      const checked = (formData.adicionaisIds || []).includes(a.id);
+                      return (
+                        <button
+                          key={a.id}
+                          type="button"
+                          onClick={() => handleAdicionalToggle(a.id)}
+                          className={`flex justify-between items-center border rounded px-3 py-2 text-xs text-left ${
+                            checked ? "bg-primary/5 border-primary" : "bg-muted/30"
+                          }`}
+                        >
+                          <div>
+                            <div className="font-medium text-sm">{a.nome}</div>
+                            <div className="text-muted-foreground text-xs">
+                              {a.modelo === "valor_pessoa"
+                                ? "Valor por pessoa"
+                                : a.modelo === "valor_unidade"
+                                ? "Valor por unidade"
+                                : "Valor por festa"}
+                            </div>
+                          </div>
+                          <div className="text-xs font-medium">
+                            R$ {a.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="tipo">Tipo do Evento:</Label>
-                  <Select value={formData.tipo} onValueChange={(value) => handleInputChange("tipo", value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="aniversario">Aniversário</SelectItem>
-                      <SelectItem value="casamento">Casamento</SelectItem>
-                      <SelectItem value="corporativo">Corporativo</SelectItem>
-                      <SelectItem value="festa">Festa</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="valor">Valor (R$):</Label>
-                  <Input
-                    id="valor"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.valor}
-                    onChange={(e) => handleInputChange("valor", parseFloat(e.target.value) || 0)}
-                  />
+                <div className="space-y-2">
+                  <div>
+                    <Label htmlFor="valorEntrada">Entrada (R$):</Label>
+                    <Input
+                      id="valorEntrada"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={formData.valorEntrada ?? 0}
+                      onChange={e =>
+                        handleInputChange("valorEntrada", parseFloat(e.target.value) || 0)
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="formaPagamento">Formas de pagamento:</Label>
+                    <Textarea
+                      id="formaPagamento"
+                      value={formData.formaPagamento || ""}
+                      onChange={e => handleInputChange("formaPagamento", e.target.value)}
+                      placeholder="Forma de pagamento combinada (ex: 50% entrada, 50% após o evento)"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -332,88 +541,7 @@ const handleCancelEdit = () => {
           </CardContent>
         </Card>
       )}
-{/* Formulário de Pacotes */}
-{showPackageForm && (
-  <form onSubmit={handleAddPacote} className="mb-6 p-4 border rounded bg-card">
-    <h2 className="text-lg font-semibold mb-2">
-      {editingPacoteId ? "Editar Pacote" : "Novo Pacote"}
-    </h2>
 
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <input
-        name="nome"
-        value={pacoteForm.nome}
-        onChange={handlePacoteChange}
-        placeholder="Nome do pacote"
-        className="p-2 border rounded col-span-2"
-        required
-      />
-
-      <input
-        name="duracaoHoras"
-        type="number"
-        min={1}
-        value={pacoteForm.duracaoHoras}
-        onChange={handlePacoteChange}
-        className="p-2 border rounded"
-        placeholder="Duração (horas)"
-      />
-
-      <textarea
-        name="descricao"
-        value={pacoteForm.descricao}
-        onChange={handlePacoteChange}
-        placeholder="Descrição (opcional)"
-        className="p-2 border rounded col-span-3"
-      />
-    </div>
-
-    <div className="mt-3 flex gap-2">
-      <button type="submit" className="bg-primary text-white px-4 py-2 rounded">
-        {editingPacoteId ? "Salvar Alterações" : "Salvar Pacote"}
-      </button>
-      <button
-        type="button"
-        className="bg-muted px-4 py-2 rounded"
-        onClick={editingPacoteId ? handleCancelEdit : () => setShowPackageForm(false)}
-      >
-        {editingPacoteId ? "Cancelar Edição" : "Cancelar"}
-      </button>
-    </div>
-  </form>
-)}
-
-{/* Lista de Pacotes */}
-<section className="mb-6">
-  <h3 className="text-lg font-medium mb-2">Pacotes Criados</h3>
-  {pacotes.length === 0 ? (
-    <div className="text-sm text-muted-foreground">Nenhum pacote cadastrado ainda.</div>
-  ) : (
-    <ul className="space-y-3">
-      {pacotes.map(p => (
-  <li key={p.id} className="p-3 border rounded flex justify-between items-start">
-    <div>
-      <div className="font-semibold">{p.nome}</div>
-      <div className="text-sm text-muted-foreground">
-        {p.duracaoHoras}h
-      </div>
-      {p.descricao && <div className="mt-1 text-sm">{p.descricao}</div>}
-    </div>
-    <div className="flex items-center">
-      <button onClick={() => handleEditPacote(p)} className="text-blue-600 hover:underline mr-3">
-        Editar
-      </button>
-      <button onClick={() => handleRemovePacote(p.id)} className="text-red-600 hover:underline">
-        Remover
-      </button>
-    </div>
-  </li>
-))}
-    </ul>
-  )}
-</section>
-
-      {/* Event List */}
       {!showForm && (
         <div className="space-y-4">
           {filteredEventos.map((evento) => (

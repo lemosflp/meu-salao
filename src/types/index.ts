@@ -22,11 +22,21 @@ export interface Evento {
   clienteNome: string;
   data: string;
   horaInicio: string;
-  horaFim: string;
+  horaFim?: string;
   tipo: 'festa' | 'casamento' | 'aniversario' | 'corporativo' | 'outro';
   status: 'confirmado' | 'pendente' | 'cancelado';
   observacoes?: string;
-  valor?: number;
+  valor: number;
+
+  // novos campos
+  pacoteId?: string;
+  convidados?: number;
+  decoracao?: string;
+  equipeId?: string;
+  equipeProfissionais?: { id: string; nome: string; quantidade: number }[];
+  adicionaisIds?: string[];
+  valorEntrada?: number;
+  formaPagamento?: string;
 }
 
 export interface Contrato {

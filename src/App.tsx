@@ -5,9 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { AppProvider } from "@/contexts/AppContext";
+import { PacotesProvider } from "@/contexts/PacotesContext";
+import { AdicionaisProvider } from "@/contexts/AdicionaisContext";
+import { EquipesProvider } from "@/contexts/EquipesContext";
 import Dashboard from "./pages/Dashboard";
 import Calendario from "./pages/Calendario";
 import Eventos from "./pages/Eventos";
+import Pacotes from "./pages/Pacotes";
 import Clientes from "./pages/Clientes";
 import Relatorios from "./pages/Relatorios";
 import Contratos from "./pages/Contratos";
@@ -21,25 +25,32 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AppProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/calendario" element={<Calendario />} />
-              <Route path="/eventos" element={<Eventos />} />
-              <Route path="/clientes" element={<Clientes />} />
-              <Route path="/relatorios" element={<Relatorios />} />
-              <Route path="/contratos" element={<Contratos />} />
-              <Route path="/conta" element={<Conta />} />
-              <Route path="/ajuda" element={<Ajuda />} />
-              <Route path="/logout" element={<Dashboard />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-        </BrowserRouter>
+        <PacotesProvider>
+          <AdicionaisProvider>
+            <EquipesProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/calendario" element={<Calendario />} />
+                    <Route path="/eventos" element={<Eventos />} />
+                    <Route path="/pacotes" element={<Pacotes />} />
+                    <Route path="/clientes" element={<Clientes />} />
+                    <Route path="/relatorios" element={<Relatorios />} />
+                    <Route path="/contratos" element={<Contratos />} />
+                    <Route path="/conta" element={<Conta />} />
+                    <Route path="/ajuda" element={<Ajuda />} />
+                    <Route path="/logout" element={<Dashboard />} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Layout>
+              </BrowserRouter>
+            </EquipesProvider>
+          </AdicionaisProvider>
+        </PacotesProvider>
       </AppProvider>
     </TooltipProvider>
   </QueryClientProvider>
