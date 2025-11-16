@@ -1,6 +1,2 @@
-import React from "react";
-import { usePacotesContext } from "../contexts/PacotesContext";
-
-export const EventoForm: React.FC = () => {
-  const { pacotes } = usePacotesContext();
-};
+// Componente antigo de formulário de evento, não é mais utilizado.
+export {};
