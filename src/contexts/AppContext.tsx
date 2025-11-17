@@ -1,14 +1,11 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import { Cliente, Evento, Contrato } from "@/types";
-import { mockClientes, mockEventos, mockContratos } from "@/data/mockData";
+import { Cliente, Evento } from "@/types";
 
 interface AppContextType {
   clientes: Cliente[];
   eventos: Evento[];
-  contratos: Contrato[];
   addCliente: (cliente: Omit<Cliente, 'id' | 'createdAt'>) => void;
   addEvento: (evento: Omit<Evento, 'id'>) => void;
-  addContrato: (contrato: Omit<Contrato, 'id'>) => void;
   updateEvento: (id: string, data: Partial<Omit<Evento, "id">>) => void;
   removeEvento: (id: string) => void;
 }
@@ -24,9 +21,8 @@ export const useAppContext = () => {
 };
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [clientes, setClientes] = useState<Cliente[]>(mockClientes);
-  const [eventos, setEventos] = useState<Evento[]>(mockEventos);
-  const [contratos, setContratos] = useState<Contrato[]>(mockContratos);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [eventos, setEventos] = useState<Evento[]>([]);
 
   const addCliente = (novoCliente: Omit<Cliente, 'id' | 'createdAt'>) => {
     const cliente: Cliente = {
@@ -55,22 +51,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setEventos(prev => prev.filter(ev => ev.id !== id));
   };
 
-  const addContrato = (novoContrato: Omit<Contrato, 'id'>) => {
-    const contrato: Contrato = {
-      ...novoContrato,
-      id: (contratos.length + 1).toString(),
-    };
-    setContratos(prev => [...prev, contrato]);
-  };
-
   return (
     <AppContext.Provider value={{
       clientes,
       eventos,
-      contratos,
       addCliente,
       addEvento,
-      addContrato,
       updateEvento,
       removeEvento,
     }}>

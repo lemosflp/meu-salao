@@ -52,6 +52,7 @@ export default function Eventos() {
   });
 
   const [adicionaisObservacoesMap, setAdicionaisObservacoesMap] = useState<Record<string, string>>({});
+  const [adicionaisQuantidadeMap, setAdicionaisQuantidadeMap] = useState<Record<string, number>>({});
 
   const [eventoEquipeProfissionais, setEventoEquipeProfissionais] = useState<
     { id: string; nome: string; quantidade: number }[]
@@ -125,6 +126,11 @@ export default function Eventos() {
           delete copy[adicionalId];
           return copy;
         });
+        setAdicionaisQuantidadeMap(prevMap => {
+          const copy = { ...prevMap };
+          delete copy[adicionalId];
+          return copy;
+        });
       }
 
       return {
@@ -136,6 +142,14 @@ export default function Eventos() {
 
   const handleAdicionalObservacaoChange = (adicionalId: string, value: string) => {
     setAdicionaisObservacoesMap(prev => ({
+      ...prev,
+      [adicionalId]: value,
+    }));
+  };
+
+  const handleAdicionalQuantidadeChange = (adicionalId: string, valueStr: string) => {
+    const value = valueStr === "" ? 0 : Number(valueStr) || 0;
+    setAdicionaisQuantidadeMap(prev => ({
       ...prev,
       [adicionalId]: value,
     }));
@@ -250,10 +264,27 @@ export default function Eventos() {
     const excedente = Math.max(0, convidadosEvento - selectedPacote.convidadosBase);
     const valorExcedente = excedente * selectedPacote.valorPorPessoa;
 
-    const valorAdicionais = selecionadosAdicionais.reduce((sum, a) => sum + a.valor, 0);
+    const valorAdicionais = selecionadosAdicionais.reduce((sum, a) => {
+      if (a.modelo === "valor_festa") {
+        return sum + a.valor;
+      }
+
+      if (a.modelo === "valor_unidade") {
+        const qtd = adicionaisQuantidadeMap[a.id] ?? 0;
+        return sum + a.valor * qtd;
+      }
+
+      const convidados = convidadosEvento || 0;
+      return sum + a.valor * convidados;
+    }, 0);
 
     return base + valorExcedente + valorAdicionais;
-  }, [selectedPacote, formData.convidados, selecionadosAdicionais]);
+  }, [
+    selectedPacote,
+    formData.convidados,
+    selecionadosAdicionais,
+    adicionaisQuantidadeMap,
+  ]);
 
   useEffect(() => {
     if (!selectedPacote) return;
@@ -296,7 +327,7 @@ export default function Eventos() {
       toast({
         title: "Erro no cadastro",
         description:
-          "Preencha todos os campos obrigatórios (cliente, pacote, data, início, convidados, ao menos um aniversariante/homenageado e forma de pagamento).",
+          "Preencha todos os campos obrigatórios (cliente, proposta, data, início, convidados, ao menos um aniversariante/homenageado e forma de pagamento).",
         variant: "destructive",
       });
       return;
@@ -305,7 +336,7 @@ export default function Eventos() {
     if (selectedPacote && (formData.convidados || 0) < selectedPacote.convidadosBase) {
       toast({
         title: "Número de convidados inválido",
-        description: `O pacote selecionado possui mínimo de ${selectedPacote.convidadosBase} convidados.`,
+        description: `A proposta selecionada possui mínimo de ${selectedPacote.convidadosBase} convidados.`,
         variant: "destructive",
       });
       return;
@@ -348,6 +379,12 @@ export default function Eventos() {
           return { adicionalId, observacao: obs.trim() };
         })
         .filter(Boolean) as { adicionalId: string; observacao: string }[],
+      adicionaisQuantidade: (formData.adicionaisIds || [])
+        .map(adicionalId => ({
+          adicionalId,
+          quantidade: adicionaisQuantidadeMap[adicionalId] ?? 0,
+        }))
+        .filter(item => item.quantidade > 0),
     };
 
     if (editingEventoId) {
@@ -390,6 +427,7 @@ export default function Eventos() {
     });
     setEventoEquipeProfissionais([]);
     setAdicionaisObservacoesMap({});
+    setAdicionaisQuantidadeMap({});
     setValorEditadoManualmente(false);
   };
 
@@ -421,11 +459,17 @@ export default function Eventos() {
 
     setEventoEquipeProfissionais(ev.equipeProfissionais ?? []);
 
-    const mapFromEvento: Record<string, string> = {};
+    const mapFromEventoObs: Record<string, string> = {};
     ev.adicionaisObservacoes?.forEach(item => {
-      mapFromEvento[item.adicionalId] = item.observacao;
+      mapFromEventoObs[item.adicionalId] = item.observacao;
     });
-    setAdicionaisObservacoesMap(mapFromEvento);
+    setAdicionaisObservacoesMap(mapFromEventoObs);
+
+    const mapFromEventoQtd: Record<string, number> = {};
+    ev.adicionaisQuantidade?.forEach(item => {
+      mapFromEventoQtd[item.adicionalId] = item.quantidade;
+    });
+    setAdicionaisQuantidadeMap(mapFromEventoQtd);
 
     setEditingEventoId(id);
     setShowForm(true);
@@ -458,6 +502,7 @@ export default function Eventos() {
     });
     setEventoEquipeProfissionais([]);
     setAdicionaisObservacoesMap({});
+    setAdicionaisQuantidadeMap({});
     setValorEditadoManualmente(false);
   };
 
@@ -482,6 +527,35 @@ export default function Eventos() {
 
   const [showAdicionaisPicker, setShowAdicionaisPicker] = useState(false);
 
+  // NOVO: helpers para detalhes
+  const getPacoteById = (id?: string) =>
+    id ? pacotes.find(p => p.id === id) : undefined;
+
+  const getEquipeById = (id?: string) =>
+    id ? equipes.find(e => e.id === id) : undefined;
+
+  const calcularTotalAdicionalEvento = (
+    adicional: (typeof adicionais)[number],
+    evento: Evento
+  ) => {
+    const convidados = evento.convidados ?? 0;
+
+    if (adicional.modelo === "valor_festa") {
+      return adicional.valor;
+    }
+
+    if (adicional.modelo === "valor_unidade") {
+      const qtdItem = evento.adicionaisQuantidade?.find(
+        q => q.adicionalId === adicional.id
+      );
+      const qtd = qtdItem?.quantidade ?? 0;
+      return adicional.valor * qtd;
+    }
+
+    // valor_pessoa
+    return adicional.valor * convidados;
+  };
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -496,7 +570,7 @@ export default function Eventos() {
             onClick={() => navigate("/pacotes")}
           >
             <Plus size={16} className="mr-2" />
-            Gerenciar pacotes
+            Gerenciar propostas
           </Button>
 
           <Button
@@ -631,13 +705,13 @@ export default function Eventos() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label>Pacote: <span className="text-red-500">*</span></Label>
+                  <Label>Proposta: <span className="text-red-500">*</span></Label>
                   <Select
                     value={formData.pacoteId}
                     onValueChange={handlePacoteSelect}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o pacote" />
+                      <SelectValue placeholder="Selecione a proposta" />
                     </SelectTrigger>
                     <SelectContent>
                       {pacotes.map(p => (
@@ -686,7 +760,7 @@ export default function Eventos() {
                   <div>
                     Duração selecionada:{" "}
                     <strong>{diffHorasPacote.duracaoHoras.toFixed(2)}h</strong>{" "}
-                    (pacote: <strong>{selectedPacote.duracaoHoras}h</strong>)
+                    (proposta: <strong>{selectedPacote.duracaoHoras}h</strong>)
                   </div>
 
                   {diffHorasPacote.hasExtra && (
@@ -787,7 +861,7 @@ export default function Eventos() {
 
                 {adicionais.length === 0 ? (
                   <div className="text-xs text-muted-foreground">
-                    Nenhum adicional cadastrado. Cadastre em Pacotes &gt; Adicionais.
+                    Nenhum adicional cadastrado. Cadastre em Propostas &gt; Adicionais.
                   </div>
                 ) : (
                   <>
@@ -820,13 +894,14 @@ export default function Eventos() {
                     {showAdicionaisPicker && (
                       <div className="mt-3 border rounded-md bg-muted/40">
                         <div className="px-3 py-2 border-b text-xs text-muted-foreground">
-                          Marque os adicionais desejados, preencha as observações (quando existir) e clique em &quot;Aplicar seleção&quot;.
+                          Marque os adicionais desejados, preencha as observações/quantidades e clique em &quot;Aplicar seleção&quot;.
                         </div>
 
                         <div className="max-h-64 overflow-y-auto divide-y">
                           {adicionais.map(a => {
                             const checked = (formData.adicionaisIds || []).includes(a.id);
                             const obsValue = adicionaisObservacoesMap[a.id] || "";
+                            const qtdValue = adicionaisQuantidadeMap[a.id] ?? 0;
                             return (
                               <div key={a.id} className="px-3 py-2 text-xs md:text-sm">
                                 <label className="flex items-center justify-between cursor-pointer hover:bg-muted/40 rounded px-1 py-1">
@@ -853,11 +928,27 @@ export default function Eventos() {
                                   </div>
                                 </label>
 
+                                {checked && a.modelo === "valor_unidade" && (
+                                  <div className="mt-2 pl-6 flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">Quantidade:</span>
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      value={qtdValue === 0 ? "" : qtdValue}
+                                      onChange={e =>
+                                        handleAdicionalQuantidadeChange(a.id, e.target.value)
+                                      }
+                                      className="w-24 h-8 text-xs"
+                                      placeholder="Qtd."
+                                    />
+                                  </div>
+                                )}
+
                                 {checked && a.observacao && (
                                   <div className="mt-2 pl-6">
                                     <Textarea
                                       rows={2}
-                                      placeholder="Observação para este adicional (ex: balões rosas e azuis)"
+                                      placeholder="Observação para este adicional"
                                       value={obsValue}
                                       onChange={e =>
                                         handleAdicionalObservacaoChange(a.id, e.target.value)
@@ -961,13 +1052,14 @@ export default function Eventos() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="formaPagamento">Formas de pagamento: <span className="text-red-500">*</span></Label>
-                  <Textarea
+                  <Label htmlFor="formaPagamento">
+                    Formas de pagamento: <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
                     id="formaPagamento"
                     value={formData.formaPagamento || ""}
                     onChange={e => handleInputChange("formaPagamento", e.target.value)}
                     placeholder="Ex.: 50% entrada, 50% após o evento"
-                    className="h-[64px]"
                   />
                 </div>
               </div>
@@ -1088,6 +1180,7 @@ export default function Eventos() {
               <CardTitle>Detalhes do evento</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
+              {/* BLOCO PRINCIPAL */}
               <div>
                 <span className="font-medium text-foreground">Título: </span>
                 {selectedEvento.titulo}
@@ -1113,16 +1206,114 @@ export default function Eventos() {
                 <span className="font-medium text-foreground">Status: </span>
                 {selectedEvento.status}
               </div>
+
+              {/* PROPOSTA */}
+              {(() => {
+                const pacote = getPacoteById(selectedEvento.pacoteId);
+                if (!pacote) return null;
+                return (
+                  <div className="mt-2 space-y-1">
+                    <div>
+                      <span className="font-medium text-foreground">Proposta: </span>
+                      {pacote.nome}
+                    </div>
+                    <div className="text-xs text-muted-foreground ml-4 space-y-0.5">
+                      <div>• Duração: {pacote.duracaoHoras}h</div>
+                      <div>• Convidados base: {pacote.convidadosBase}</div>
+                      <div>
+                        • Valor base: R$ {pacote.valorBase.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                        })}
+                      </div>
+                      <div>
+                        • Valor por pessoa: R$ {pacote.valorPorPessoa.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Valor total */}
               <div>
                 <span className="font-medium text-foreground">Valor: </span>
                 R$ {selectedEvento.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
               </div>
+
+              {/* Entrada e saldo */}
+              {selectedEvento.valorEntrada !== undefined && (
+                <div className="space-y-0.5">
+                  <div>
+                    <span className="font-medium text-foreground">Entrada: </span>
+                    R$ {(selectedEvento.valorEntrada || 0).toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Saldo a receber:{" "}
+                    <span className="font-medium text-foreground">
+                      R$ {(
+                        selectedEvento.valor - (selectedEvento.valorEntrada || 0)
+                      ).toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {selectedEvento.convidados !== undefined && (
                 <div>
                   <span className="font-medium text-foreground">Convidados: </span>
                   {selectedEvento.convidados}
                 </div>
               )}
+
+              {/* Decoração */}
+              {selectedEvento.decoracao && (
+                <div>
+                  <span className="font-medium text-foreground">Decoração: </span>
+                  {selectedEvento.decoracao}
+                </div>
+              )}
+
+              {/* Equipe e profissionais */}
+              {(() => {
+                const equipe = getEquipeById(selectedEvento.equipeId);
+                if (!equipe && !selectedEvento.equipeProfissionais?.length) return null;
+
+                return (
+                  <div className="space-y-1">
+                    {equipe && (
+                      <div>
+                        <span className="font-medium text-foreground">Equipe: </span>
+                        {equipe.nome}
+                      </div>
+                    )}
+                    {selectedEvento.equipeProfissionais &&
+                      selectedEvento.equipeProfissionais.length > 0 && (
+                        <div>
+                          <span className="font-medium text-foreground">
+                            Profissionais na equipe:
+                          </span>
+                          <ul className="list-disc list-inside mt-1 space-y-1 text-xs">
+                            {selectedEvento.equipeProfissionais.map(p => (
+                              <li key={p.id}>
+                                {p.nome}{" "}
+                                <span className="text-muted-foreground">
+                                  (Qtd.: {p.quantidade})
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                  </div>
+                );
+              })()}
+
+              {/* Aniversariantes / Homenageados */}
               {selectedEvento.aniversariantes && selectedEvento.aniversariantes.length > 0 && (
                 <div>
                   <span className="font-medium text-foreground">
@@ -1141,6 +1332,7 @@ export default function Eventos() {
                 </div>
               )}
 
+              {/* Adicionais */}
               {selectedEvento.adicionaisIds && selectedEvento.adicionaisIds.length > 0 && (
                 <div>
                   <span className="font-medium text-foreground">Adicionais: </span>
@@ -1152,20 +1344,50 @@ export default function Eventos() {
                       const obsItem = selectedEvento.adicionaisObservacoes?.find(
                         o => o.adicionalId === adicionalId
                       );
+                      const qtdItem = selectedEvento.adicionaisQuantidade?.find(
+                        q => q.adicionalId === adicionalId
+                      );
+
+                      const totalAdicional = calcularTotalAdicionalEvento(
+                        adicional,
+                        selectedEvento
+                      );
+
+                      const modeloLabel =
+                        adicional.modelo === "valor_pessoa"
+                          ? "por pessoa"
+                          : adicional.modelo === "valor_unidade"
+                          ? "por unidade"
+                          : "por festa";
 
                       return (
                         <li key={adicionalId}>
-                          <span className="font-medium">{adicional.nome}</span>
+                          <span className="font-medium">{adicional.nome}</span>{" "}
+                          <span className="text-muted-foreground">({modeloLabel})</span>
                           {typeof adicional.valor === "number" && (
                             <>
                               {" - "}
                               <span className="text-muted-foreground">
-                                R$ {adicional.valor.toLocaleString("pt-BR", {
+                                Valor base: R$ {adicional.valor.toLocaleString("pt-BR", {
                                   minimumFractionDigits: 2,
                                 })}
                               </span>
                             </>
                           )}
+                          {qtdItem && qtdItem.quantidade > 0 && (
+                            <span className="text-muted-foreground">
+                              {" "}
+                              (Qtd.: {qtdItem.quantidade})
+                            </span>
+                          )}
+                          <div className="text-xs text-foreground mt-0.5">
+                            Total deste adicional:{" "}
+                            <span className="font-medium">
+                              R$ {totalAdicional.toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </span>
+                          </div>
                           {obsItem?.observacao && (
                             <div className="text-xs text-muted-foreground mt-0.5">
                               Obs.: {obsItem.observacao}
@@ -1178,6 +1400,7 @@ export default function Eventos() {
                 </div>
               )}
 
+              {/* Pagamento */}
               {selectedEvento.formaPagamento && (
                 <div>
                   <span className="font-medium text-foreground">Pagamento: </span>
@@ -1185,6 +1408,7 @@ export default function Eventos() {
                 </div>
               )}
 
+              {/* Observações gerais */}
               {selectedEvento.observacoes && (
                 <div>
                   <span className="font-medium text-foreground">Observações: </span>
@@ -1192,6 +1416,7 @@ export default function Eventos() {
                 </div>
               )}
 
+              {/* Botões */}
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button
                   type="button"

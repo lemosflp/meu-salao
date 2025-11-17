@@ -49,17 +49,24 @@ export interface Evento {
     adicionalId: string;
     observacao: string;
   }[];
+
+  // NOVO: quantidades de adicionais por evento (para valor_unidade)
+  adicionaisQuantidade?: {
+    adicionalId: string;
+    quantidade: number;
+  }[];
 }
 
-export interface Contrato {
-  id: string;
-  eventoId: string;
-  clienteId: string;
-  valor: number;
-  desconto?: number;
-  valorFinal: number;
-  formaPagamento: string;
-  status: 'ativo' | 'finalizado' | 'cancelado';
-  dataAssinatura: string;
-  observacoes?: string;
-}
+// Removido tipo Contrato
+// export interface Contrato {
+//   id: string;
+//   eventoId: string;
+//   clienteId: string;
+//   valor: number;
+//   desconto?: number;
+//   valorFinal: number;
+//   formaPagamento: string;
+//   status: 'ativo' | 'finalizado' | 'cancelado';
+//   dataAssinatura: string;
+//   observacoes?: string;
+// }

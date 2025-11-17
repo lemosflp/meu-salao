@@ -7,7 +7,7 @@ import { Plus, Edit } from "lucide-react";
 import { usePacotesContext } from "@/contexts/PacotesContext";
 import { useAdicionaisContext } from "@/contexts/AdicionaisContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox"; // se já existir no projeto
+import { Checkbox } from "@/components/ui/checkbox";
 import { useEquipesContext } from "@/contexts/EquipesContext";
 
 export default function Pacotes() {
@@ -38,7 +38,7 @@ export default function Pacotes() {
     valor: "",
     duracaoHoras: "",
     descricao: "",
-    observacao: false, // novo
+    observacao: false,
   });
 
   // ESTADO EQUIPES
@@ -290,9 +290,9 @@ export default function Pacotes() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Pacotes, Adicionais e Equipes</h1>
+          <h1 className="text-3xl font-bold text-foreground">Propostas, Adicionais e Equipes</h1>
           <p className="text-muted-foreground">
-            Cadastrar e gerenciar pacotes, adicionais e equipes de eventos
+            Cadastrar e gerenciar propostas, adicionais e equipes de eventos
           </p>
         </div>
 
@@ -336,7 +336,7 @@ export default function Pacotes() {
             }}
           >
             <Plus size={16} className="mr-2" />
-            {showForm ? "Cancelar" : editingPacoteId ? "Editar Pacote" : "Cadastrar Pacote"}
+            {showForm ? "Cancelar" : editingPacoteId ? "Editar Proposta" : "Cadastrar Proposta"}
           </Button>
         </div>
       </div>
@@ -502,7 +502,7 @@ export default function Pacotes() {
                   <Checkbox
                     id="observacao"
                     checked={adicionalForm.observacao}
-                    onCheckedChange={(checked) =>
+                    onCheckedChange={checked =>
                       handleAdicionalObservacaoChange(Boolean(checked))
                     }
                   />
@@ -514,7 +514,6 @@ export default function Pacotes() {
                   </label>
                 </div>
 
-                {/* Hint / ajuda */}
                 <div className="text-xs text-muted-foreground bg-muted/60 border border-muted rounded px-3 py-2">
                   Este campo habilita uma observação para este adicional.
                 </div>
@@ -542,7 +541,7 @@ export default function Pacotes() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>
-              {editingPacoteId ? "Editar Pacote" : "Cadastrar Pacote"}
+              {editingPacoteId ? "Editar Proposta" : "Cadastrar Proposta"}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -553,7 +552,7 @@ export default function Pacotes() {
                   name="nome"
                   value={pacoteForm.nome}
                   onChange={handlePacoteChange}
-                  placeholder="Nome do pacote"
+                  placeholder="Nome da proposta"
                   className="md:col-span-2"
                   required
                 />
@@ -607,7 +606,7 @@ export default function Pacotes() {
 
               <div className="mt-3 flex gap-2">
                 <Button type="submit" className="bg-primary text-primary-foreground">
-                  {editingPacoteId ? "Salvar alterações" : "Salvar pacote"}
+                  {editingPacoteId ? "Salvar alterações" : "Salvar proposta"}
                 </Button>
                 <Button
                   type="button"
@@ -626,15 +625,15 @@ export default function Pacotes() {
       <section className="mt-6 mb-6">
         <Card className="bg-muted/40">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Pacotes cadastrados</CardTitle>
+            <CardTitle className="text-base">Propostas cadastradas</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Visualize e gerencie todos os pacotes disponíveis.
+              Visualize e gerencie todas as propostas disponíveis.
             </p>
           </CardHeader>
           <CardContent>
             {pacotes.length === 0 ? (
               <div className="p-6 text-sm text-muted-foreground border border-dashed rounded-md">
-                Nenhum pacote cadastrado ainda.
+                Nenhuma proposta cadastrada ainda.
               </div>
             ) : (
               <div className="space-y-4">
@@ -704,7 +703,7 @@ export default function Pacotes() {
         <section className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Detalhes do pacote</CardTitle>
+              <CardTitle>Detalhes da proposta</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div>
