@@ -426,29 +426,119 @@ export default function Clientes() {
 
 {/* Visualizar Cliente */}
 {viewMode === 'view' && selectedCliente && (
-  <Card className="p-6">
-    <CardHeader>
-      <CardTitle className="text-2xl">
-        {selectedCliente.nome} {selectedCliente.sobrenome}
-      </CardTitle>
+  <Card className="mt-6 border border-slate-200 shadow-sm">
+    <CardHeader className="border-b bg-slate-50/80">
+      <div className="flex items-center justify-between">
+        <div>
+          <CardTitle className="text-2xl flex items-center gap-2">
+            <span>{selectedCliente.nome} {selectedCliente.sobrenome}</span>
+            <Badge variant="outline" className="text-xs">
+              {selectedCliente.sexo === 'M' ? 'Masculino' : selectedCliente.sexo === 'F' ? 'Feminino' : 'Outro'}
+            </Badge>
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Cliente desde{" "}
+            {format(parseISO(selectedCliente.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+          </p>
+        </div>
+        <div className="text-right text-xs text-muted-foreground">
+          <div className="font-medium">Contato principal</div>
+          <div>{selectedCliente.email}</div>
+          <div>{selectedCliente.numeroCelular}</div>
+        </div>
+      </div>
     </CardHeader>
-    <CardContent>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-        <div><span className="font-medium">CPF:</span> {selectedCliente.cpf}</div>
-        <div><span className="font-medium">Sexo:</span> {selectedCliente.sexo}</div>
-        <div><span className="font-medium">Email:</span> {selectedCliente.email}</div>
-        <div><span className="font-medium">Celular:</span> {selectedCliente.numeroCelular}</div>
-        <div><span className="font-medium">Telefone:</span> {selectedCliente.numeroTelefone}</div>
-        <div><span className="font-medium">Nascimento:</span> {selectedCliente.dataNascimento}</div>
-        <div className="col-span-1 md:col-span-2"><span className="font-medium">Endereço:</span> {selectedCliente.endereco} {selectedCliente.complemento}</div>
-        <div><span className="font-medium">Cidade/Estado:</span> {selectedCliente.cidade}, {selectedCliente.estado}</div>
-        <div><span className="font-medium">Cadastrado:</span> {format(parseISO(selectedCliente.createdAt), "dd/MM/yyyy", { locale: ptBR })}</div>
+    <CardContent className="pt-4 space-y-5">
+      {/* Linha de chips principais */}
+      <div className="flex flex-wrap gap-2 text-xs">
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <span className="font-medium">CPF</span>
+          <span>{selectedCliente.cpf}</span>
+        </Badge>
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <span className="font-medium">Nascimento</span>
+          <span>{selectedCliente.dataNascimento}</span>
+        </Badge>
+        {selectedCliente.numeroTelefone && (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <span className="font-medium">Telefone</span>
+            <span>{selectedCliente.numeroTelefone}</span>
+          </Badge>
+        )}
       </div>
 
-      <div className="mt-4 flex gap-2">
-        <Button onClick={handleBackFromView} className="px-4">Voltar</Button>
-        <Button onClick={handleEditFromView} className="bg-primary hover:bg-primary-hover text-primary-foreground px-4">
-          Editar
+      {/* Seções em duas colunas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+        <div className="space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Dados pessoais
+          </h3>
+          <div className="rounded-lg border bg-slate-50/60 p-3 space-y-1">
+            <div>
+              <span className="font-medium text-foreground">Nome completo: </span>
+              <span>{selectedCliente.nome} {selectedCliente.sobrenome}</span>
+            </div>
+            <div>
+              <span className="font-medium text-foreground">Sexo: </span>
+              <span>{selectedCliente.sexo}</span>
+            </div>
+            <div>
+              <span className="font-medium text-foreground">Data de nascimento: </span>
+              <span>{selectedCliente.dataNascimento}</span>
+            </div>
+          </div>
+
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Contato
+          </h3>
+          <div className="rounded-lg border bg-slate-50/60 p-3 space-y-1">
+            <div>
+              <span className="font-medium text-foreground">Email: </span>
+              <span>{selectedCliente.email}</span>
+            </div>
+            <div>
+              <span className="font-medium text-foreground">Celular: </span>
+              <span>{selectedCliente.numeroCelular}</span>
+            </div>
+            {selectedCliente.numeroTelefone && (
+              <div>
+                <span className="font-medium text-foreground">Telefone: </span>
+                <span>{selectedCliente.numeroTelefone}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Endereço
+          </h3>
+          <div className="rounded-lg border bg-slate-50/60 p-3 space-y-1">
+            <div>
+              <span className="font-medium text-foreground">Endereço: </span>
+              <span>{selectedCliente.endereco}</span>
+              {selectedCliente.complemento && (
+                <span className="text-muted-foreground"> {selectedCliente.complemento}</span>
+              )}
+            </div>
+            <div>
+              <span className="font-medium text-foreground">Cidade/Estado: </span>
+              <span>{selectedCliente.cidade}, {selectedCliente.estado}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Ações */}
+      <div className="mt-4 flex gap-2 justify-end">
+        <Button onClick={handleBackFromView} variant="outline" className="px-4">
+          Voltar
+        </Button>
+        <Button
+          onClick={handleEditFromView}
+          className="bg-primary hover:bg-primary-hover text-primary-foreground px-4"
+        >
+          Editar cadastro
         </Button>
       </div>
     </CardContent>
