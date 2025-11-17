@@ -1,171 +1,241 @@
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Calendar, Users } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { mockEventos } from "@/data/mockData";
-import { format, parseISO } from "date-fns";
+import { useAppContext } from "@/contexts/AppContext";
+import { Calendar, Users, PartyPopper, CheckCircle2, Clock, ArrowRight } from "lucide-react";
+import { format, isAfter, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  
-  const proximosEventos = mockEventos
-    .filter(evento => new Date(evento.data) >= new Date())
-    .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
-    .slice(0, 6);
+  const { clientes, eventos } = useAppContext();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmado': return 'bg-green-100 text-green-800';
-      case 'pendente': return 'bg-yellow-100 text-yellow-800';
-      case 'cancelado': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // métricas simples
+  const totalClientes = clientes.length;
+  const totalEventos = eventos.length;
+  const totalConfirmados = eventos.filter(e => e.status === "confirmado").length;
+  const totalPendentes = eventos.filter(e => e.status === "pendente").length;
 
-  const getTipoColor = (tipo: string) => {
-    switch (tipo) {
-      case 'festa': return 'bg-event-primary text-white';
-      case 'casamento': return 'bg-pink-500 text-white';
-      case 'aniversario': return 'bg-event-secondary text-white';
-      case 'corporativo': return 'bg-gray-600 text-white';
-      default: return 'bg-event-primary text-white';
-    }
-  };
+  const faturamentoEstimado = useMemo(
+    () => eventos.reduce((sum, e) => sum + (e.valor || 0), 0),
+    [eventos]
+  );
+
+  const proximosEventos = useMemo(() => {
+    const now = new Date();
+    return [...eventos]
+      .filter(e => isAfter(parseISO(e.data), now))
+      .sort((a, b) => parseISO(a.data).getTime() - parseISO(b.data).getTime())
+      .slice(0, 4);
+  }, [eventos]);
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-            <Users size={20} className="text-gray-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Olá, user</h2>
-            <p className="text-sm text-muted-foreground">Tenha um bom dia!</p>
-          </div>
+    <div className="space-y-6">
+      {/* Topo: saudação + CTA principal */}
+      <section className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Olá, bem-vindo(a) 👋</h1>
+          <p className="text-muted-foreground mt-1">
+            Acompanhe rapidamente seus eventos e clientes do salão.
+          </p>
         </div>
-        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-      </div>
-
-      {/* Próximos Eventos */}
-      <Card className="mb-8">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-xl font-semibold">Próximos eventos</CardTitle>
+        <div className="flex flex-wrap gap-2">
           <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/calendario")}
-            className="text-primary hover:text-primary-hover"
+            className="bg-primary hover:bg-primary-hover text-primary-foreground"
+            onClick={() => navigate("/eventos")}
           >
-            Detalhes
-            <ArrowRight size={16} className="ml-2" />
+            <PartyPopper size={18} className="mr-2" />
+            Cadastrar novo evento
           </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {proximosEventos.map((evento) => {
-              const data = parseISO(evento.data);
-              const dia = format(data, 'd');
-              const mes = format(data, 'MMM', { locale: ptBR }).toUpperCase();
-              
-              return (
-                <div key={evento.id} className="text-center">
-                  <div className={`${getTipoColor(evento.tipo)} rounded-lg p-4 mb-2`}>
-                    <div className="text-2xl font-bold text-white">{dia}</div>
-                    <div className="text-sm text-white/90">{mes}</div>
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {evento.titulo}
-                  </p>
-                  <Badge 
-                    variant="secondary" 
-                    className={`text-xs mt-1 ${getStatusColor(evento.status)}`}
-                  >
-                    {evento.status}
-                  </Badge>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/calendario")}
+          >
+            <Calendar size={16} className="mr-2" />
+            Ver calendário
+          </Button>
+        </div>
+      </section>
 
-      {/* Action Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105">
-          <CardContent className="p-6">
-            <Button 
-              className="w-full h-auto p-6 bg-primary hover:bg-primary-hover text-primary-foreground flex items-center justify-between text-lg font-semibold rounded-xl"
-              onClick={() => navigate("/clientes")}
-            >
-              <span>Cadastrar cliente</span>
-              <ArrowRight size={24} />
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105">
-          <CardContent className="p-6">
-            <Button 
-              className="w-full h-auto p-6 bg-primary hover:bg-primary-hover text-primary-foreground flex items-center justify-between text-lg font-semibold rounded-xl"
-              onClick={() => navigate("/calendario")}
-            >
-              <span>Cadastrar Eventos</span>
-              <ArrowRight size={24} />
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        <Card>
-          <CardHeader className="pb-2">
+      {/* Cards-resumo principais */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <Card className="border border-slate-200">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Eventos Este Mês
+              Clientes cadastrados
             </CardTitle>
+            <Users size={18} className="text-slate-400" />
           </CardHeader>
           <CardContent>
-            {/* <div className="text-2xl font-bold text-primary">{mockEventos.length}</div>
+            <div className="text-2xl font-semibold">{totalClientes}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              +12% em relação ao mês anterior
-            </p> */}
+              Pessoas na sua base de contatos.
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="border border-slate-200">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Receita Mensal
+              Eventos confirmados
+            </CardTitle>
+            <CheckCircle2 size={18} className="text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{totalConfirmados}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Festas já garantidas na agenda.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-200">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Eventos pendentes
+            </CardTitle>
+            <Clock size={18} className="text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{totalPendentes}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Orçamentos aguardando confirmação.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-200">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Faturamento estimado
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {/* <div className="text-2xl font-bold text-green-600">
-              R$ {mockEventos.reduce((total, evento) => total + (evento.valor || 0), 0).toLocaleString()}
+            <div className="text-2xl font-semibold">
+              R$ {faturamentoEstimado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              +8% em relação ao mês anterior
-            </p> */}
+              Soma do valor de todos os eventos cadastrados.
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Linha inferior: próximos eventos + atalhos rápidos */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Próximos eventos */}
+        <Card className="lg:col-span-2 border border-slate-200">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div>
+              <CardTitle className="text-base">Próximos eventos</CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Os próximos compromissos na sua agenda.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/calendario")}
+            >
+              Ver calendário completo
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {proximosEventos.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Nenhum evento futuro cadastrado no momento.
+              </p>
+            )}
+
+            {proximosEventos.map((ev) => (
+              <div
+                key={ev.id}
+                className="flex items-center justify-between rounded-md border px-3 py-2 hover:bg-slate-50 transition-colors text-sm"
+              >
+                <div className="flex flex-col">
+                  <span className="font-medium text-foreground">
+                    {ev.titulo || "Evento"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {ev.clienteNome} • {format(parseISO(ev.data), "dd/MM/yyyy", { locale: ptBR })} •{" "}
+                    {ev.horaInicio}
+                    {ev.horaFim && ` - ${ev.horaFim}`}
+                  </span>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                    {ev.tipo}
+                  </span>
+                  <span
+                    className={`text-[11px] px-2 py-0.5 rounded-full ${
+                      ev.status === "confirmado"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : ev.status === "pendente"
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {ev.status}
+                  </span>
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Clientes Ativos
-            </CardTitle>
+        {/* Atalhos rápidos */}
+        <Card className="border border-slate-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Atalhos rápidos</CardTitle>
           </CardHeader>
-          <CardContent>
-            {/* <div className="text-2xl font-bold text-event-secondary">15</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              +3 novos clientes este mês
-            </p> */}
+          <CardContent className="space-y-2 text-sm">
+            <button
+              className="w-full flex items-center justify-between rounded-md border px-3 py-2 hover:bg-slate-50 transition-colors"
+              onClick={() => navigate("/eventos")}
+            >
+              <span className="flex items-center gap-2">
+                <PartyPopper size={16} />
+                Novo evento
+              </span>
+              <ArrowRight size={14} className="text-muted-foreground" />
+            </button>
+
+            <button
+              className="w-full flex items-center justify-between rounded-md border px-3 py-2 hover:bg-slate-50 transition-colors"
+              onClick={() => navigate("/clientes")}
+            >
+              <span className="flex items-center gap-2">
+                <Users size={16} />
+                Novo cliente
+              </span>
+              <ArrowRight size={14} className="text-muted-foreground" />
+            </button>
+
+            <button
+              className="w-full flex items-center justify-between rounded-md border px-3 py-2 hover:bg-slate-50 transition-colors"
+              onClick={() => navigate("/propostas")}
+            >
+              <span className="flex items-center gap-2">
+                <Calendar size={16} />
+                Criar/editar proposta
+              </span>
+              <ArrowRight size={14} className="text-muted-foreground" />
+            </button>
+
+            <button
+              className="w-full flex items-center justify-between rounded-md border px-3 py-2 hover:bg-slate-50 transition-colors"
+              onClick={() => navigate("/relatorios")}
+            >
+              <span className="flex items-center gap-2">
+                <Clock size={16} />
+                Ver relatórios
+              </span>
+              <ArrowRight size={14} className="text-muted-foreground" />
+            </button>
           </CardContent>
         </Card>
-      </div>
+      </section>
     </div>
   );
 }

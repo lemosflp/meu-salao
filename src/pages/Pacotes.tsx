@@ -700,55 +700,60 @@ export default function Pacotes() {
 
       {/* DETALHE DO PACOTE SELECIONADO */}
       {selectedPacote && (
-        <section className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalhes da proposta</CardTitle>
+        <section className="mt-6">
+          <Card className="border border-slate-200 shadow-sm">
+            <CardHeader className="border-b bg-slate-50/80">
+              <CardTitle className="text-xl">{selectedPacote.nome}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div>
-                <span className="font-medium text-foreground">Nome: </span>
-                {selectedPacote.nome}
+            <CardContent className="space-y-4 text-sm pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-lg border bg-slate-50/60 p-3 space-y-1">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Estrutura da proposta
+                  </h3>
+                  <div>
+                    <span className="font-medium text-foreground">Duração: </span>
+                    {selectedPacote.duracaoHoras}h
+                  </div>
+                  <div>
+                    <span className="font-medium text-foreground">Convidados base: </span>
+                    {selectedPacote.convidadosBase}
+                  </div>
+                </div>
+                <div className="rounded-lg border bg-slate-50/60 p-3 space-y-1">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Valores
+                  </h3>
+                  <div>
+                    <span className="font-medium text-foreground">Valor base: </span>
+                    R$ {selectedPacote.valorBase.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </div>
+                  <div>
+                    <span className="font-medium text-foreground">Valor por pessoa: </span>
+                    R$ {selectedPacote.valorPorPessoa.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className="font-medium text-foreground">Duração: </span>
-                {selectedPacote.duracaoHoras}h
-              </div>
-              <div>
-                <span className="font-medium text-foreground">
-                  Convidados base:{" "}
-                </span>
-                {selectedPacote.convidadosBase}
-              </div>
-              <div>
-                <span className="font-medium text-foreground">Valor base: </span>
-                R{"$ "}
-                {selectedPacote.valorBase.toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                })}
-              </div>
-              <div>
-                <span className="font-medium text-foreground">
-                  Valor por pessoa:{" "}
-                </span>
-                R{"$ "}
-                {selectedPacote.valorPorPessoa.toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                })}
-              </div>
+
               {selectedPacote.descricao && (
-                <div>
-                  <span className="font-medium text-foreground">
-                    Descrição:{" "}
-                  </span>
-                  {selectedPacote.descricao}
+                <div className="rounded-lg border bg-slate-50/60 p-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                    Descrição
+                  </h3>
+                  <p className="text-sm whitespace-pre-line">
+                    {selectedPacote.descricao}
+                  </p>
                 </div>
               )}
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2 justify-end">
                 <Button
                   type="button"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  variant="outline"
                   onClick={() => setSelectedPacoteId(null)}
                 >
                   Voltar
@@ -759,7 +764,6 @@ export default function Pacotes() {
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={() => {
                     handleEditPacote(selectedPacote.id);
-                    // opcional: setSelectedPacoteId(null);
                   }}
                 >
                   Editar
@@ -864,75 +868,77 @@ export default function Pacotes() {
 
       {/* DETALHE DO ADICIONAL SELECIONADO */}
       {selectedAdicional && (
-        <section className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalhes do adicional</CardTitle>
+        <section className="mt-6">
+          <Card className="border border-slate-200 shadow-sm">
+            <CardHeader className="border-b bg-slate-50/80">
+              <CardTitle>{selectedAdicional.nome}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div>
-                <span className="font-medium text-foreground">Nome: </span>
-                {selectedAdicional.nome}
+            <CardContent className="space-y-4 text-sm pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-lg border bg-slate-50/60 p-3 space-y-1">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Modelo
+                  </h3>
+                  <div>
+                    {selectedAdicional.modelo === "valor_pessoa"
+                      ? "Valor por pessoa"
+                      : selectedAdicional.modelo === "valor_unidade"
+                      ? "Valor por unidade"
+                      : "Valor por festa"}
+                  </div>
+                </div>
+                <div className="rounded-lg border bg-slate-50/60 p-3 space-y-1">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Valor e duração
+                  </h3>
+                  <div>
+                    <span className="font-medium text-foreground">Valor: </span>
+                    R$ {selectedAdicional.valor.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </div>
+                  <div>
+                    <span className="font-medium text-foreground">Duração: </span>
+                    {selectedAdicional.duracaoHoras}h
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className="font-medium text-foreground">Modelo: </span>
-                {selectedAdicional.modelo === "valor_pessoa"
-                  ? "Valor por pessoa"
-                  : selectedAdicional.modelo === "valor_unidade"
-                  ? "Valor por unidade"
-                  : "Valor por festa"}
-              </div>
-              <div>
-                <span className="font-medium text-foreground">Valor: </span>
-                R{"$ "}
-                {selectedAdicional.valor.toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                })}
-              </div>
-              <div>
-                <span className="font-medium text-foreground">Duração: </span>
-                {selectedAdicional.duracaoHoras}h
-              </div>
+
               {selectedAdicional.descricao && (
-                <div>
-                  <span className="font-medium text-foreground">
-                    Descrição:{" "}
-                  </span>
-                  {selectedAdicional.descricao}
+                <div className="rounded-lg border bg-slate-50/60 p-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                    Descrição
+                  </h3>
+                  <p className="text-sm whitespace-pre-line">
+                    {selectedAdicional.descricao}
+                  </p>
                 </div>
               )}
               {selectedAdicional.observacao && (
-                <div>
-                  <span className="font-medium text-foreground">
-                    Observação habilitada
-                  </span>
+                <div className="rounded-lg border bg-slate-50/60 p-3 text-xs text-muted-foreground">
+                  Observação habilitada para este adicional.
                 </div>
               )}
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {/* Voltar (azul) */}
+              <div className="mt-3 flex flex-wrap gap-2 justify-end">
                 <Button
                   type="button"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  variant="outline"
                   onClick={() => setSelectedAdicionalId(null)}
                 >
                   Voltar
                 </Button>
 
-                {/* Editar (azul) */}
                 <Button
                   type="button"
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={() => {
                     handleEditAdicional(selectedAdicional.id);
-                    // opcional: fechar detalhe:
-                    // setSelectedAdicionalId(null);
                   }}
                 >
                   Editar
                 </Button>
 
-                {/* Remover (vermelho) */}
                 <Button
                   type="button"
                   className="bg-red-600 hover:bg-red-700 text-white"
@@ -1014,40 +1020,41 @@ export default function Pacotes() {
 
       {/* DETALHE DA EQUIPE SELECIONADA */}
       {selectedEquipe && (
-        <section className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalhes da equipe</CardTitle>
+        <section className="mt-6">
+          <Card className="border border-slate-200 shadow-sm">
+            <CardHeader className="border-b bg-slate-50/80">
+              <CardTitle>{selectedEquipe.nome}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div>
-                <span className="font-medium text-foreground">Nome: </span>
-                {selectedEquipe.nome}
+            <CardContent className="space-y-4 text-sm pt-4">
+              <div className="rounded-lg border bg-slate-50/60 p-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+                  Profissionais
+                </h3>
+                {selectedEquipe.profissionais.length === 0 ? (
+                  <div className="text-muted-foreground text-sm">
+                    Nenhum profissional cadastrado para esta equipe.
+                  </div>
+                ) : (
+                  <ul className="divide-y rounded-md border bg-white/80">
+                    {selectedEquipe.profissionais.map((p) => (
+                      <li
+                        key={p.id}
+                        className="flex items-center justify-between px-3 py-2"
+                      >
+                        <span className="font-medium">{p.nome}</span>
+                        <span className="text-xs text-muted-foreground">
+                          Quantidade: {p.quantidade}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              <div>
-                <span className="font-medium text-foreground">Profissionais: </span>
-              </div>
-              {selectedEquipe.profissionais.length === 0 ? (
-                <div className="text-muted-foreground text-sm">
-                  Nenhum profissional cadastrado para esta equipe.
-                </div>
-              ) : (
-                <ul className="list-disc list-inside text-sm space-y-1">
-                  {selectedEquipe.profissionais.map(p => (
-                    <li key={p.id}>
-                      <span className="font-medium">{p.nome}</span>{" "}
-                      <span className="text-muted-foreground">
-                        ({p.quantidade})
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2 justify-end">
                 <Button
                   type="button"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  variant="outline"
                   onClick={() => setSelectedEquipeId(null)}
                 >
                   Voltar
@@ -1058,8 +1065,6 @@ export default function Pacotes() {
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={() => {
                     handleEditEquipe(selectedEquipe.id);
-                    // opcional: manter detalhe aberto
-                    // setSelectedEquipeId(null);
                   }}
                 >
                   Editar

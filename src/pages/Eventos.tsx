@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Calendar, Clock, MapPin, Edit } from "lucide-react";
+import { Search, Plus, Calendar, Clock, MapPin, Edit, CheckCircle2 } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 import { usePacotesContext } from "@/contexts/PacotesContext";
 import { useAdicionaisContext } from "@/contexts/AdicionaisContext";
@@ -36,7 +36,7 @@ export default function Eventos() {
     data: "",
     horaInicio: "",
     horaFim: "",
-    tipo: "aniversario",
+    tipo: "festa",
     status: "pendente",
     observacoes: "",
     valor: 0,
@@ -353,7 +353,7 @@ export default function Eventos() {
       data: formData.data!,
       horaInicio: formData.horaInicio!,
       horaFim: formData.horaFim,
-      tipo: formData.tipo || "aniversario",
+      tipo: formData.tipo || "festa",
       status: formData.status || "pendente",
       observacoes: formData.observacoes || "",
       valor: valorDigitado,
@@ -411,7 +411,7 @@ export default function Eventos() {
       data: "",
       horaInicio: "",
       horaFim: "",
-      tipo: "aniversario",
+      tipo: "festa",
       status: "pendente",
       observacoes: "",
       valor: 0,
@@ -442,7 +442,7 @@ export default function Eventos() {
       data: ev.data,
       horaInicio: ev.horaInicio,
       horaFim: ev.horaFim,
-      tipo: ev.tipo,
+      tipo: ev.tipo === "aniversario" ? "festa" : ev.tipo,
       status: ev.status,
       observacoes: ev.observacoes ?? "",
       valor: ev.valor,
@@ -486,7 +486,7 @@ export default function Eventos() {
       data: "",
       horaInicio: "",
       horaFim: "",
-      tipo: "aniversario",
+      tipo: "festa",
       status: "pendente",
       observacoes: "",
       valor: 0,
@@ -517,7 +517,6 @@ export default function Eventos() {
 
   const getTipoColor = (tipo: string) => {
     switch (tipo) {
-      case 'aniversario': return 'bg-pink-100 text-pink-800';
       case 'casamento': return 'bg-purple-100 text-purple-800';
       case 'corporativo': return 'bg-blue-100 text-blue-800';
       case 'festa': return 'bg-orange-100 text-orange-800';
@@ -1138,7 +1137,19 @@ export default function Eventos() {
                     )}
                   </div>
 
-                  <div className="flex items-start ml-4">
+                  <div className="flex flex-col items-end ml-4 gap-2">
+                    {evento.status === "pendente" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs text-green-700 border-green-600 hover:bg-green-600 hover:text-white"
+                        onClick={() => updateEvento(evento.id, { status: "confirmado" })}
+                      >
+                        <CheckCircle2 size={14} className="mr-1" />
+                        Confirmar
+                      </Button>
+                    )}
+
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1174,253 +1185,275 @@ export default function Eventos() {
       )}
 
       {selectedEvento && (
-        <section className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalhes do evento</CardTitle>
+        <section className="mt-6">
+          <Card className="border border-slate-200 shadow-sm">
+            <CardHeader className="border-b bg-slate-50/80">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl flex items-center gap-3">
+                    <span>{selectedEvento.titulo}</span>
+                    <Badge className={getStatusColor(selectedEvento.status)}>
+                      {selectedEvento.status}
+                    </Badge>
+                    <Badge className={getTipoColor(selectedEvento.tipo)}>
+                      {selectedEvento.tipo}
+                    </Badge>
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                    <Calendar size={14} />
+                    {format(parseISO(selectedEvento.data), "dd/MM/yyyy", { locale: ptBR })} •{" "}
+                    <Clock size={14} />
+                    {selectedEvento.horaInicio}
+                    {selectedEvento.horaFim && ` - ${selectedEvento.horaFim}`} •{" "}
+                    <MapPin size={14} />
+                    {selectedEvento.clienteNome}
+                  </p>
+                </div>
+                <div className="text-right text-xs text-muted-foreground">
+                  <div className="font-medium">Valor total</div>
+                  <div className="text-lg font-semibold text-foreground">
+                    R$ {selectedEvento.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </div>
+                  {selectedEvento.valorEntrada !== undefined && (
+                    <div className="mt-1 space-y-0.5">
+                      <div>
+                        Entrada:{" "}
+                        <span className="font-medium">
+                          R$ {(selectedEvento.valorEntrada || 0).toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+                      <div>
+                        Saldo:{" "}
+                        <span className="font-medium">
+                          R$ {(
+                            selectedEvento.valor - (selectedEvento.valorEntrada || 0)
+                          ).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              {/* BLOCO PRINCIPAL */}
-              <div>
-                <span className="font-medium text-foreground">Título: </span>
-                {selectedEvento.titulo}
-              </div>
-              <div>
-                <span className="font-medium text-foreground">Cliente: </span>
-                {selectedEvento.clienteNome}
-              </div>
-              <div>
-                <span className="font-medium text-foreground">Data: </span>
-                {format(parseISO(selectedEvento.data), "dd/MM/yyyy", { locale: ptBR })}
-              </div>
-              <div>
-                <span className="font-medium text-foreground">Horário: </span>
-                {selectedEvento.horaInicio}
-                {selectedEvento.horaFim && ` - ${selectedEvento.horaFim}`}
-              </div>
-              <div>
-                <span className="font-medium text-foreground">Tipo: </span>
-                {selectedEvento.tipo}
-              </div>
-              <div>
-                <span className="font-medium text-foreground">Status: </span>
-                {selectedEvento.status}
-              </div>
 
-              {/* PROPOSTA */}
-              {(() => {
-                const pacote = getPacoteById(selectedEvento.pacoteId);
-                if (!pacote) return null;
-                return (
-                  <div className="mt-2 space-y-1">
+            <CardContent className="space-y-6 pt-4 text-sm">
+              {/* Grid de 2 colunas principais */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Coluna esquerda */}
+                <div className="space-y-4">
+                  {/* Cliente / Proposta */}
+                  <div className="rounded-lg border bg-slate-50/60 p-3 space-y-2">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Informações principais
+                    </h3>
                     <div>
-                      <span className="font-medium text-foreground">Proposta: </span>
-                      {pacote.nome}
+                      <span className="font-medium text-foreground">Cliente: </span>
+                      {selectedEvento.clienteNome}
                     </div>
-                    <div className="text-xs text-muted-foreground ml-4 space-y-0.5">
-                      <div>• Duração: {pacote.duracaoHoras}h</div>
-                      <div>• Convidados base: {pacote.convidadosBase}</div>
-                      <div>
-                        • Valor base: R$ {pacote.valorBase.toLocaleString("pt-BR", {
-                          minimumFractionDigits: 2,
-                        })}
-                      </div>
-                      <div>
-                        • Valor por pessoa: R$ {pacote.valorPorPessoa.toLocaleString("pt-BR", {
-                          minimumFractionDigits: 2,
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Valor total */}
-              <div>
-                <span className="font-medium text-foreground">Valor: </span>
-                R$ {selectedEvento.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-              </div>
-
-              {/* Entrada e saldo */}
-              {selectedEvento.valorEntrada !== undefined && (
-                <div className="space-y-0.5">
-                  <div>
-                    <span className="font-medium text-foreground">Entrada: </span>
-                    R$ {(selectedEvento.valorEntrada || 0).toLocaleString("pt-BR", {
-                      minimumFractionDigits: 2,
-                    })}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Saldo a receber:{" "}
-                    <span className="font-medium text-foreground">
-                      R$ {(
-                        selectedEvento.valor - (selectedEvento.valorEntrada || 0)
-                      ).toLocaleString("pt-BR", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {selectedEvento.convidados !== undefined && (
-                <div>
-                  <span className="font-medium text-foreground">Convidados: </span>
-                  {selectedEvento.convidados}
-                </div>
-              )}
-
-              {/* Decoração */}
-              {selectedEvento.decoracao && (
-                <div>
-                  <span className="font-medium text-foreground">Decoração: </span>
-                  {selectedEvento.decoracao}
-                </div>
-              )}
-
-              {/* Equipe e profissionais */}
-              {(() => {
-                const equipe = getEquipeById(selectedEvento.equipeId);
-                if (!equipe && !selectedEvento.equipeProfissionais?.length) return null;
-
-                return (
-                  <div className="space-y-1">
-                    {equipe && (
-                      <div>
-                        <span className="font-medium text-foreground">Equipe: </span>
-                        {equipe.nome}
-                      </div>
-                    )}
-                    {selectedEvento.equipeProfissionais &&
-                      selectedEvento.equipeProfissionais.length > 0 && (
-                        <div>
-                          <span className="font-medium text-foreground">
-                            Profissionais na equipe:
-                          </span>
-                          <ul className="list-disc list-inside mt-1 space-y-1 text-xs">
-                            {selectedEvento.equipeProfissionais.map(p => (
-                              <li key={p.id}>
-                                {p.nome}{" "}
-                                <span className="text-muted-foreground">
-                                  (Qtd.: {p.quantidade})
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                  </div>
-                );
-              })()}
-
-              {/* Aniversariantes / Homenageados */}
-              {selectedEvento.aniversariantes && selectedEvento.aniversariantes.length > 0 && (
-                <div>
-                  <span className="font-medium text-foreground">
-                    Aniversariantes / Homenageados:
-                  </span>
-                  <ul className="list-disc list-inside mt-1 space-y-1">
-                    {selectedEvento.aniversariantes.map((a, idx) => (
-                      <li key={idx}>
-                        <span className="font-medium">{a.nome}</span>
-                        {a.idade !== undefined && (
-                          <span className="text-muted-foreground"> ({a.idade} anos)</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Adicionais */}
-              {selectedEvento.adicionaisIds && selectedEvento.adicionaisIds.length > 0 && (
-                <div>
-                  <span className="font-medium text-foreground">Adicionais: </span>
-                  <ul className="list-disc list-inside mt-1 space-y-1">
-                    {selectedEvento.adicionaisIds.map(adicionalId => {
-                      const adicional = adicionais.find(a => a.id === adicionalId);
-                      if (!adicional) return null;
-
-                      const obsItem = selectedEvento.adicionaisObservacoes?.find(
-                        o => o.adicionalId === adicionalId
-                      );
-                      const qtdItem = selectedEvento.adicionaisQuantidade?.find(
-                        q => q.adicionalId === adicionalId
-                      );
-
-                      const totalAdicional = calcularTotalAdicionalEvento(
-                        adicional,
-                        selectedEvento
-                      );
-
-                      const modeloLabel =
-                        adicional.modelo === "valor_pessoa"
-                          ? "por pessoa"
-                          : adicional.modelo === "valor_unidade"
-                          ? "por unidade"
-                          : "por festa";
-
+                    {(() => {
+                      const pacote = getPacoteById(selectedEvento.pacoteId);
+                      if (!pacote) return null;
                       return (
-                        <li key={adicionalId}>
-                          <span className="font-medium">{adicional.nome}</span>{" "}
-                          <span className="text-muted-foreground">({modeloLabel})</span>
-                          {typeof adicional.valor === "number" && (
-                            <>
-                              {" - "}
-                              <span className="text-muted-foreground">
-                                Valor base: R$ {adicional.valor.toLocaleString("pt-BR", {
-                                  minimumFractionDigits: 2,
-                                })}
-                              </span>
-                            </>
-                          )}
-                          {qtdItem && qtdItem.quantidade > 0 && (
-                            <span className="text-muted-foreground">
-                              {" "}
-                              (Qtd.: {qtdItem.quantidade})
-                            </span>
-                          )}
-                          <div className="text-xs text-foreground mt-0.5">
-                            Total deste adicional:{" "}
-                            <span className="font-medium">
-                              R$ {totalAdicional.toLocaleString("pt-BR", {
+                        <div className="mt-1">
+                          <span className="font-medium text-foreground">Proposta: </span>
+                          {pacote.nome}
+                          <div className="text-xs text-muted-foreground mt-1 space-y-0.5 ml-1">
+                            <div>• Duração: {pacote.duracaoHoras}h</div>
+                            <div>• Convidados base: {pacote.convidadosBase}</div>
+                            <div>
+                              • Valor base: R$ {pacote.valorBase.toLocaleString("pt-BR", {
                                 minimumFractionDigits: 2,
                               })}
-                            </span>
+                            </div>
+                            <div>
+                              • Valor por pessoa: R$ {pacote.valorPorPessoa.toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </div>
                           </div>
-                          {obsItem?.observacao && (
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              Obs.: {obsItem.observacao}
+                        </div>
+                      );
+                    })()}
+                    {selectedEvento.convidados !== undefined && (
+                      <div className="mt-1">
+                        <span className="font-medium text-foreground">Convidados: </span>
+                        {selectedEvento.convidados}
+                      </div>
+                    )}
+                    {selectedEvento.decoracao && (
+                      <div>
+                        <span className="font-medium text-foreground">Decoração: </span>
+                        {selectedEvento.decoracao}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Aniversariantes */}
+                  {selectedEvento.aniversariantes &&
+                    selectedEvento.aniversariantes.length > 0 && (
+                      <div className="rounded-lg border bg-slate-50/60 p-3">
+                        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+                          Aniversariantes / Homenageados
+                        </h3>
+                        <ul className="space-y-1 text-sm">
+                          {selectedEvento.aniversariantes.map((a, idx) => (
+                            <li
+                              key={idx}
+                              className="flex items-center justify-between border rounded px-2 py-1 bg-white/70"
+                            >
+                              <span className="font-medium">{a.nome}</span>
+                              {a.idade !== undefined && (
+                                <span className="text-xs text-muted-foreground">
+                                  {a.idade} anos
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                </div>
+
+                {/* Coluna direita */}
+                <div className="space-y-4">
+                  {/* Equipe */}
+                  {(() => {
+                    const equipe = getEquipeById(selectedEvento.equipeId);
+                    if (!equipe && !selectedEvento.equipeProfissionais?.length) return null;
+
+                    return (
+                      <div className="rounded-lg border bg-slate-50/60 p-3 space-y-2">
+                        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Equipe
+                        </h3>
+                        {equipe && (
+                          <div>
+                            <span className="font-medium text-foreground">Equipe principal: </span>
+                            {equipe.nome}
+                          </div>
+                        )}
+                        {selectedEvento.equipeProfissionais &&
+                          selectedEvento.equipeProfissionais.length > 0 && (
+                            <div className="mt-1">
+                              <span className="font-medium text-foreground">
+                                Profissionais:
+                              </span>
+                              <ul className="list-disc list-inside mt-1 space-y-1 text-xs">
+                                {selectedEvento.equipeProfissionais.map((p) => (
+                                  <li key={p.id}>
+                                    {p.nome}{" "}
+                                    <span className="text-muted-foreground">
+                                      (Qtd.: {p.quantidade})
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
                           )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
+                      </div>
+                    );
+                  })()}
 
-              {/* Pagamento */}
-              {selectedEvento.formaPagamento && (
-                <div>
-                  <span className="font-medium text-foreground">Pagamento: </span>
-                  {selectedEvento.formaPagamento}
-                </div>
-              )}
+                  {/* Adicionais */}
+                  {selectedEvento.adicionaisIds &&
+                    selectedEvento.adicionaisIds.length > 0 && (
+                      <div className="rounded-lg border bg-slate-50/60 p-3 space-y-2">
+                        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Adicionais contratados
+                        </h3>
+                        <ul className="space-y-2 text-xs">
+                          {selectedEvento.adicionaisIds.map((adicionalId) => {
+                            const adicional = adicionais.find((a) => a.id === adicionalId);
+                            if (!adicional) return null;
 
-              {/* Observações gerais */}
-              {selectedEvento.observacoes && (
-                <div>
-                  <span className="font-medium text-foreground">Observações: </span>
-                  {selectedEvento.observacoes}
+                            const obsItem = selectedEvento.adicionaisObservacoes?.find(
+                              (o) => o.adicionalId === adicionalId
+                            );
+                            const qtdItem = selectedEvento.adicionaisQuantidade?.find(
+                              (q) => q.adicionalId === adicionalId
+                            );
+                            const totalAdicional = calcularTotalAdicionalEvento(
+                              adicional,
+                              selectedEvento
+                            );
+
+                            const modeloLabel =
+                              adicional.modelo === "valor_pessoa"
+                                ? "por pessoa"
+                                : adicional.modelo === "valor_unidade"
+                                ? "por unidade"
+                                : "por festa";
+
+                            return (
+                              <li
+                                key={adicionalId}
+                                className="rounded border bg-white/80 px-2 py-1.5"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <span className="font-medium">{adicional.nome}</span>{" "}
+                                    <span className="text-muted-foreground">
+                                      ({modeloLabel})
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    R$ {totalAdicional.toLocaleString("pt-BR", {
+                                      minimumFractionDigits: 2,
+                                    })}
+                                  </div>
+                                </div>
+                                <div className="text-[11px] text-muted-foreground mt-0.5">
+                                  Valor base: R$ {adicional.valor.toLocaleString("pt-BR", {
+                                    minimumFractionDigits: 2,
+                                  })}
+                                  {qtdItem && qtdItem.quantidade > 0 && (
+                                    <> • Qtd.: {qtdItem.quantidade}</>
+                                  )}
+                                </div>
+                                {obsItem?.observacao && (
+                                  <div className="text-[11px] text-muted-foreground mt-0.5">
+                                    Obs.: {obsItem.observacao}
+                                  </div>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
                 </div>
-              )}
+              </div>
+
+              {/* Pagamento e Observações */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {selectedEvento.formaPagamento && (
+                  <div className="rounded-lg border bg-slate-50/60 p-3">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                      Pagamento
+                    </h3>
+                    <p className="text-sm">{selectedEvento.formaPagamento}</p>
+                  </div>
+                )}
+
+                {selectedEvento.observacoes && (
+                  <div className="rounded-lg border bg-slate-50/60 p-3">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                      Observações gerais
+                    </h3>
+                    <p className="text-sm whitespace-pre-line">
+                      {selectedEvento.observacoes}
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {/* Botões */}
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-wrap gap-2 justify-end">
                 <Button
                   type="button"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  variant="outline"
                   onClick={() => setSelectedEventoId(null)}
                 >
                   Voltar
@@ -1435,6 +1468,19 @@ export default function Eventos() {
                 >
                   Editar
                 </Button>
+
+                {selectedEvento.status === "pendente" && (
+                  <Button
+                    type="button"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => {
+                      updateEvento(selectedEvento.id, { status: "confirmado" });
+                    }}
+                  >
+                    <CheckCircle2 size={16} className="mr-1" />
+                    Confirmar festa
+                  </Button>
+                )}
 
                 <Button
                   type="button"

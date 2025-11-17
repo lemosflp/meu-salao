@@ -17,20 +17,19 @@ type LayoutProps = {
 
 export const Layout = ({ children }: LayoutProps) => {
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900">
-      {/* SIDEBAR AZUL */}
-      <aside className="w-64 bg-blue-700 text-white flex flex-col h-screen">
-        {/* Logo / título */}
+    <div className="min-h-screen bg-blue-700 text-slate-900">
+      {/* SIDEBAR FIXA */}
+      <aside className="fixed left-0 top-0 h-screen w-64 bg-blue-700 text-white flex flex-col">
+        {/* topo: logo/título */}
         <div className="px-6 py-5 border-b border-blue-500 flex items-center gap-3">
-          {/* ajuste o src da logo se houver imagem local */}
-          {/* <img src="/logo.png" alt="Meu Salão" className="h-8 w-auto" /> */}
+          {/* coloque sua logo aqui se tiver */}
           <div className="flex flex-col">
             <span className="text-lg font-semibold tracking-tight">Meu Salão</span>
             <span className="text-xs text-blue-200">Painel de gestão</span>
           </div>
         </div>
 
-        {/* Navegação principal */}
+        {/* navegação principal */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto text-sm">
           <NavLink
             to="/"
@@ -118,8 +117,8 @@ export const Layout = ({ children }: LayoutProps) => {
           </NavLink>
         </nav>
 
-        {/* Rodapé da sidebar: conta / ajuda / sair */}
-        <div className="border-t border-blue-600 px-3 py-3 text-sm space-y-1 mt-auto">
+        {/* rodapé: Conta / Ajuda / Sair */}
+        <div className="border-t border-blue-600 px-3 py-3 text-sm space-y-1">
           <NavLink
             to="/conta"
             className={({ isActive }) =>
@@ -165,15 +164,17 @@ export const Layout = ({ children }: LayoutProps) => {
       </aside>
 
       {/* CONTEÚDO PRINCIPAL */}
-      <main className="flex-1 min-h-screen bg-slate-50">
-        {/* Topbar simples opcional; remova se já tiver outra */}
-        <header className="h-14 border-b bg-white flex items-center justify-between px-6">
-          <span className="text-sm text-slate-500">
-            Meu Salão / <span className="font-semibold text-slate-800">Painel</span>
+      <main className="min-h-screen bg-slate-50 ml-64 flex flex-col">
+        <header className="h-16 border-b bg-white flex items-center justify-between px-8">
+          <span className="text-sm md:text-base text-slate-500">
+            Meu Salão /{" "}
+            <span className="font-semibold text-slate-800">Painel</span>
           </span>
         </header>
 
-        <div className="max-w-6xl mx-auto px-4 py-6">{children}</div>
+        <div className="flex-1 px-6 md:px-10 py-6 md:py-8">
+          {children}
+        </div>
       </main>
     </div>
   );

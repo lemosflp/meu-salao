@@ -23,7 +23,7 @@ export interface Evento {
   data: string;
   horaInicio: string;
   horaFim?: string;
-  tipo: 'festa' | 'casamento' | 'aniversario' | 'corporativo' | 'outro';
+  tipo: 'festa' | 'casamento' | 'corporativo' | 'outro';
   status: 'confirmado' | 'pendente' | 'cancelado';
   observacoes?: string;
   valor: number;
