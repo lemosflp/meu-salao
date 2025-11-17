@@ -1,98 +1,180 @@
 import { ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { 
-  Calendar, 
-  Users, 
-  FileText, 
-  HandHeart, 
-  LogOut, 
-  User, 
+import { NavLink } from "react-router-dom";
+import {
+  Calendar,
+  Users,
+  Package,
+  FileText,
+  Home,
   HelpCircle,
-  PartyPopper
+  User,
+  LogOut,
 } from "lucide-react";
 
-interface LayoutProps {
+type LayoutProps = {
   children: ReactNode;
-}
-
-const menuItems = [
-  { icon: Calendar, label: "Calendário", path: "/calendario" },
-  { icon: PartyPopper, label: "Eventos", path: "/eventos" },
-  { icon: Users, label: "Clientes", path: "/clientes" },
-  { icon: FileText, label: "Relatórios", path: "/relatorios" },
-  { icon: HandHeart, label: "Contratos", path: "/contratos" },
-];
-
-const bottomMenuItems = [
-  { icon: LogOut, label: "Sair", path: "/logout" },
-  { icon: User, label: "Conta", path: "/conta" },
-  { icon: HelpCircle, label: "Ajuda", path: "/ajuda" },
-];
+};
 
 export const Layout = ({ children }: LayoutProps) => {
-  const location = useLocation();
-  
-  const isActive = (path: string) => {
-    if (path === "/" && location.pathname === "/") return true;
-    if (path !== "/" && location.pathname.startsWith(path)) return true;
-    return false;
-  };
-
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-primary text-primary-foreground flex flex-col">
-        {/* Logo/Header */}
-        <div className="p-6 border-b border-primary-foreground/20">
-          <Link to="/" className="block">
-            <h1 className="text-2xl font-bold text-primary-foreground">MeuSalão</h1>
-            <p className="text-sm text-primary-foreground/80 mt-1">Nome do salão</p>
-          </Link>
+    <div className="flex min-h-screen bg-slate-50 text-slate-900">
+      {/* SIDEBAR AZUL */}
+      <aside className="w-64 bg-blue-700 text-white flex flex-col h-screen">
+        {/* Logo / título */}
+        <div className="px-6 py-5 border-b border-blue-500 flex items-center gap-3">
+          {/* ajuste o src da logo se houver imagem local */}
+          {/* <img src="/logo.png" alt="Meu Salão" className="h-8 w-auto" /> */}
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold tracking-tight">Meu Salão</span>
+            <span className="text-xs text-blue-200">Painel de gestão</span>
+          </div>
         </div>
 
-        {/* Main Menu */}
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            {menuItems.map((item) => (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                    isActive(item.path)
-                      ? "bg-primary-foreground/20 text-primary-foreground"
-                      : "text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground"
-                  }`}
-                >
-                  <item.icon size={20} />
-                  <span className="font-medium">{item.label}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+        {/* Navegação principal */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto text-sm">
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) =>
+              `flex items-center gap-2 rounded-md px-3 py-2 transition ${
+                isActive
+                  ? "bg-white text-blue-700 shadow-sm"
+                  : "text-blue-100 hover:bg-blue-600 hover:text-white"
+              }`
+            }
+          >
+            <Home size={16} />
+            <span>Dashboard</span>
+          </NavLink>
+
+          <NavLink
+            to="/calendario"
+            className={({ isActive }) =>
+              `flex items-center gap-2 rounded-md px-3 py-2 transition ${
+                isActive
+                  ? "bg-white text-blue-700 shadow-sm"
+                  : "text-blue-100 hover:bg-blue-600 hover:text-white"
+              }`
+            }
+          >
+            <Calendar size={16} />
+            <span>Calendário</span>
+          </NavLink>
+
+          <NavLink
+            to="/eventos"
+            className={({ isActive }) =>
+              `flex items-center gap-2 rounded-md px-3 py-2 transition ${
+                isActive
+                  ? "bg-white text-blue-700 shadow-sm"
+                  : "text-blue-100 hover:bg-blue-600 hover:text-white"
+              }`
+            }
+          >
+            <FileText size={16} />
+            <span>Eventos</span>
+          </NavLink>
+
+          <NavLink
+            to="/propostas"
+            className={({ isActive }) =>
+              `flex items-center gap-2 rounded-md px-3 py-2 transition ${
+                isActive
+                  ? "bg-white text-blue-700 shadow-sm"
+                  : "text-blue-100 hover:bg-blue-600 hover:text-white"
+              }`
+            }
+          >
+            <Package size={16} />
+            <span>Propostas</span>
+          </NavLink>
+
+          <NavLink
+            to="/clientes"
+            className={({ isActive }) =>
+              `flex items-center gap-2 rounded-md px-3 py-2 transition ${
+                isActive
+                  ? "bg-white text-blue-700 shadow-sm"
+                  : "text-blue-100 hover:bg-blue-600 hover:text-white"
+              }`
+            }
+          >
+            <Users size={16} />
+            <span>Clientes</span>
+          </NavLink>
+
+          <NavLink
+            to="/relatorios"
+            className={({ isActive }) =>
+              `flex items-center gap-2 rounded-md px-3 py-2 transition ${
+                isActive
+                  ? "bg-white text-blue-700 shadow-sm"
+                  : "text-blue-100 hover:bg-blue-600 hover:text-white"
+              }`
+            }
+          >
+            <FileText size={16} />
+            <span>Relatórios</span>
+          </NavLink>
         </nav>
 
-        {/* Bottom Menu */}
-        <div className="p-4 border-t border-primary-foreground/20">
-          <ul className="space-y-2">
-            {bottomMenuItems.map((item) => (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground transition-all duration-200"
-                >
-                  <item.icon size={20} />
-                  <span className="font-medium">{item.label}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
+        {/* Rodapé da sidebar: conta / ajuda / sair */}
+        <div className="border-t border-blue-600 px-3 py-3 text-sm space-y-1 mt-auto">
+          <NavLink
+            to="/conta"
+            className={({ isActive }) =>
+              `flex items-center gap-2 rounded-md px-3 py-2 transition ${
+                isActive
+                  ? "bg-white text-blue-700 shadow-sm"
+                  : "text-blue-100 hover:bg-blue-600 hover:text-white"
+              }`
+            }
+          >
+            <User size={16} />
+            <span>Conta</span>
+          </NavLink>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {children}
-      </div>
+          <NavLink
+            to="/ajuda"
+            className={({ isActive }) =>
+              `flex items-center gap-2 rounded-md px-3 py-2 transition ${
+                isActive
+                  ? "bg-white text-blue-700 shadow-sm"
+                  : "text-blue-100 hover:bg-blue-600 hover:text-white"
+              }`
+            }
+          >
+            <HelpCircle size={16} />
+            <span>Ajuda</span>
+          </NavLink>
+
+          <NavLink
+            to="/logout"
+            className={({ isActive }) =>
+              `flex items-center gap-2 rounded-md px-3 py-2 transition ${
+                isActive
+                  ? "bg-red-50 text-red-700 shadow-sm"
+                  : "text-red-100 hover:bg-red-600 hover:text-white"
+              }`
+            }
+          >
+            <LogOut size={16} />
+            <span>Sair</span>
+          </NavLink>
+        </div>
+      </aside>
+
+      {/* CONTEÚDO PRINCIPAL */}
+      <main className="flex-1 min-h-screen bg-slate-50">
+        {/* Topbar simples opcional; remova se já tiver outra */}
+        <header className="h-14 border-b bg-white flex items-center justify-between px-6">
+          <span className="text-sm text-slate-500">
+            Meu Salão / <span className="font-semibold text-slate-800">Painel</span>
+          </span>
+        </header>
+
+        <div className="max-w-6xl mx-auto px-4 py-6">{children}</div>
+      </main>
     </div>
   );
 };

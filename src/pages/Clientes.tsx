@@ -33,38 +33,55 @@ export default function Clientes() {
   });
   const { toast } = useToast();
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
-const [viewMode, setViewMode] = useState<'list' | 'view' | 'edit'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'view' | 'edit'>('list');
 
-const handleViewClick = (cliente: Cliente) => {
-  setSelectedCliente(cliente);
-  setViewMode('view');
-};
+  const handleViewClick = (cliente: Cliente) => {
+    setSelectedCliente(cliente);
+    setViewMode('view');
+  };
 
-const handleBackFromView = () => {
-  setSelectedCliente(null);
-  setViewMode('list');
-};
+  const handleBackFromView = () => {
+    setSelectedCliente(null);
+    setViewMode('list');
+  };
 
-const handleEditFromView = () => {
-  if (!selectedCliente) return;
-  setFormData({
-    nome: selectedCliente.nome,
-    sobrenome: selectedCliente.sobrenome,
-    cpf: selectedCliente.cpf,
-    sexo: selectedCliente.sexo,
-    dataNascimento: selectedCliente.dataNascimento,
-    numeroCelular: selectedCliente.numeroCelular,
-    numeroTelefone: selectedCliente.numeroTelefone,
-    email: selectedCliente.email,
-    estado: selectedCliente.estado,
-    cidade: selectedCliente.cidade,
-    endereco: selectedCliente.endereco,
-    complemento: selectedCliente.complemento,
-  });
-  setEditingClienteId(selectedCliente.id as string);
-  setShowForm(true);
-  setViewMode('edit');
-}
+  const handleEditFromView = () => {
+    if (!selectedCliente) return;
+    setFormData({
+      nome: selectedCliente.nome,
+      sobrenome: selectedCliente.sobrenome,
+      cpf: selectedCliente.cpf,
+      sexo: selectedCliente.sexo,
+      dataNascimento: selectedCliente.dataNascimento,
+      numeroCelular: selectedCliente.numeroCelular,
+      numeroTelefone: selectedCliente.numeroTelefone,
+      email: selectedCliente.email,
+      estado: selectedCliente.estado,
+      cidade: selectedCliente.cidade,
+      endereco: selectedCliente.endereco,
+      complemento: selectedCliente.complemento,
+    });
+    setEditingClienteId(selectedCliente.id as string);
+    setShowForm(true);
+    setViewMode('edit');
+  };
+
+  // --- helpers de validação ---
+  const limparNaoNumericos = (valor: string) => valor.replace(/\D/g, "");
+
+  const validarCPF = (cpfRaw: string) => {
+    const cpf = limparNaoNumericos(cpfRaw);
+    // aqui só valida tamanho; regra de dígitos verificadores pode ser adicionada depois
+    return cpf.length === 11;
+  };
+
+  // telefones aceitos:
+  // - 55 51 98888-8888  -> 13 dígitos numéricos (55 + DDD + 9 + número)
+  // - 51 98888-8888     -> 11 dígitos numéricos (DDD + 9 + número)
+  const validarTelefone = (telefoneRaw: string) => {
+    const tel = limparNaoNumericos(telefoneRaw);
+    return tel.length === 11 || tel.length === 13;
+  };
 
   const filteredClientes = clientes.filter(cliente =>
     cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -87,11 +104,43 @@ const handleEditFromView = () => {
       });
       return;
     }
+
+    // validação CPF
+    if (!validarCPF(formData.cpf)) {
+      toast({
+        title: "CPF inválido",
+        description: "Informe um CPF com 11 dígitos (ex.: 000.000.000-00).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // validação telefone celular (obrigatório)
+    if (!formData.numeroCelular || !validarTelefone(formData.numeroCelular)) {
+      toast({
+        title: "Celular inválido",
+        description:
+          "Informe um celular nos formatos 55 51 98888-8888 ou 51 98888-8888 (com ou sem espaços/hífens).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // validação telefone fixo (se preenchido)
+    if (formData.numeroTelefone && !validarTelefone(formData.numeroTelefone)) {
+      toast({
+        title: "Telefone inválido",
+        description:
+          "Informe um telefone nos formatos 55 51 3333-4444 ou 51 3333-4444 (com ou sem espaços/hífens).",
+        variant: "destructive",
+      });
+      return;
+    }
   
     if (editingClienteId) {
       // Atualizar cliente existente
       if (typeof updateCliente === "function") {
-        updateCliente(editingPacoteId ? editingPacoteId : editingClienteId, {
+        updateCliente(editingClienteId, {
           ...formData,
         });
       } else {
