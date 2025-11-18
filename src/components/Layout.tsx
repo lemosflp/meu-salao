@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Calendar,
   Users,
@@ -10,12 +10,17 @@ import {
   User,
   LogOut,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 type LayoutProps = {
   children: ReactNode;
 };
 
 export const Layout = ({ children }: LayoutProps) => {
+  const location = useLocation();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-blue-700 text-slate-900">
       {/* SIDEBAR FIXA */}
@@ -156,6 +161,11 @@ export const Layout = ({ children }: LayoutProps) => {
                   : "text-red-100 hover:bg-red-600 hover:text-white"
               }`
             }
+            onClick={async (e) => {
+              e.preventDefault();
+              await signOut();
+              navigate("/login", { replace: true });
+            }}
           >
             <LogOut size={16} />
             <span>Sair</span>
@@ -170,6 +180,11 @@ export const Layout = ({ children }: LayoutProps) => {
             Meu Salão /{" "}
             <span className="font-semibold text-slate-800">Painel</span>
           </span>
+          {user && (
+            <span className="text-xs text-slate-500">
+              Logado como <span className="font-medium">{user.email}</span>
+            </span>
+          )}
         </header>
 
         <div className="flex-1 px-6 md:px-10 py-6 md:py-8">

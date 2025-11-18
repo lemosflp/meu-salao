@@ -1,41 +1,210 @@
-import React, { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/contexts/AuthContext";
 
-export type AdicionalModelo = "valor_pessoa" | "valor_unidade" | "valor_festa";
-
-export type Adicional = {
+// tipos DB
+type DbAdicional = {
   id: string;
+  user_id: string;
   nome: string;
-  modelo: AdicionalModelo;
+  descricao: string | null;
+  modelo: "valor_pessoa" | "valor_unidade" | "valor_festa";
   valor: number;
-  duracaoHoras: number; // novo campo
+  observacao: string | null;
+  ativo: boolean;
+  created_at: string;
+};
+
+// tipo UI
+export interface Adicional {
+  id: string;
+  userId: string;
+  nome: string;
   descricao?: string;
-  observacao?: boolean; // novo campo
-};
+  modelo: "valor_pessoa" | "valor_unidade" | "valor_festa";
+  valor: number;
+  observacao?: string;
+  ativo: boolean;
+  createdAt: string;
+}
 
-type AdicionaisContextValue = {
+type AdicionaisContextType = {
   adicionais: Adicional[];
-  addAdicional: (adicional: Omit<Adicional, "id">) => void;
-  updateAdicional: (id: string, adicional: Omit<Adicional, "id">) => void;
-  removeAdicional: (id: string) => void;
+  addAdicional: (data: Omit<Adicional, "id" | "userId" | "createdAt">) => Promise<void>;
+  updateAdicional: (id: string, data: Partial<Adicional>) => Promise<void>;
+  removeAdicional: (id: string) => Promise<void>;
 };
 
-const AdicionaisContext = createContext<AdicionaisContextValue | undefined>(undefined);
+const AdicionaisContext = createContext<AdicionaisContextType | undefined>(undefined);
 
-export const AdicionaisProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const useAdicionaisContext = () => {
+  const ctx = useContext(AdicionaisContext);
+  if (!ctx) throw new Error("useAdicionaisContext deve ser usado dentro de AdicionaisProvider");
+  return ctx;
+};
+
+export const AdicionaisProvider = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth(); // <- padrão correto: depende do AuthContext
   const [adicionais, setAdicionais] = useState<Adicional[]>([]);
 
-  const addAdicional = (adicional: Omit<Adicional, "id">) => {
-    setAdicionais(prev => [{ id: String(Date.now()), ...adicional }, ...prev]);
+  useEffect(() => {
+    if (!user) {
+      // <- LIMPA estado ao deslogar / trocar usuário
+      setAdicionais([]);
+      return;
+    }
+
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("adicionais")
+        .select(
+          "id, user_id, nome, descricao, modelo, valor, observacao, ativo, created_at"
+        )
+        .eq("user_id", user.id) // OK
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Erro ao buscar adicionais:", error);
+        return;
+      }
+
+      const mapped: Adicional[] =
+        (data as DbAdicional[]).map((a) => ({
+          id: a.id,
+          userId: a.user_id,
+          nome: a.nome,
+          descricao: a.descricao ?? undefined,
+          modelo: a.modelo,
+          valor: Number(a.valor),
+          observacao: a.observacao ?? undefined,
+          ativo: a.ativo,
+          createdAt: a.created_at,
+        })) ?? [];
+
+      setAdicionais(mapped);
+    };
+
+    load();
+  }, [user]); // <- recarrega quando o usuário muda
+
+  const addAdicional: AdicionaisContextType["addAdicional"] = async (data) => {
+    if (!user) {
+      return;
+    }
+
+    const payload = {
+      user_id: user.id, // OK
+      nome: data.nome,
+      descricao: data.descricao ?? null,
+      modelo: data.modelo,
+      valor: data.valor,
+      observacao: data.observacao ?? null,
+      ativo: data.ativo,
+    };
+
+    const { data: inserted, error } = await supabase
+      .from("adicionais")
+      .insert(payload)
+      .select("id, user_id, nome, descricao, modelo, valor, observacao, ativo, created_at")
+      .single();
+
+    if (error) {
+      console.error("[AdicionaisContext] Erro ao criar adicional:", error);
+      throw error;
+    }
+
+    const a = inserted as DbAdicional;
+
+    setAdicionais((prev) => [
+      {
+        id: a.id,
+        userId: a.user_id,
+        nome: a.nome,
+        descricao: a.descricao ?? undefined,
+        modelo: a.modelo,
+        valor: Number(a.valor),
+        observacao: a.observacao ?? undefined,
+        ativo: a.ativo,
+        createdAt: a.created_at,
+      },
+      ...prev,
+    ]);
   };
 
-  const updateAdicional = (id: string, adicional: Omit<Adicional, "id">) => {
-    setAdicionais(prev =>
-      prev.map(a => (a.id === id ? { id, ...adicional } : a))
+  const updateAdicional: AdicionaisContextType["updateAdicional"] = async (id, data) => {
+    if (!user) return;
+
+    const payload: Partial<DbAdicional> = {};
+
+    if (data.nome !== undefined) payload.nome = data.nome;
+    if (data.descricao !== undefined) payload.descricao = data.descricao ?? null;
+    if (data.modelo !== undefined) payload.modelo = data.modelo;
+    if (data.valor !== undefined) payload.valor = data.valor;
+    if (data.observacao !== undefined) payload.observacao = data.observacao ?? null;
+    if (data.ativo !== undefined) payload.ativo = data.ativo;
+
+    const { data: updated, error } = await supabase
+      .from("adicionais")
+      .update(payload)
+      .eq("id", id)
+      .eq("user_id", user.id) // OK
+      .select("id, user_id, nome, descricao, modelo, valor, observacao, ativo, created_at")
+      .single();
+
+    if (error) {
+      console.error("Erro ao atualizar adicional:", error);
+      throw error;
+    }
+
+    const a = updated as DbAdicional;
+
+    setAdicionais((prev) =>
+      prev.map((old) =>
+        old.id === id
+          ? {
+              id: a.id,
+              userId: a.user_id,
+              nome: a.nome,
+              descricao: a.descricao ?? undefined,
+              modelo: a.modelo,
+              valor: Number(a.valor),
+              observacao: a.observacao ?? undefined,
+              ativo: a.ativo,
+              createdAt: a.created_at,
+            }
+          : old
+      )
     );
   };
 
-  const removeAdicional = (id: string) => {
-    setAdicionais(prev => prev.filter(a => a.id !== id));
+  const removeAdicional: AdicionaisContextType["removeAdicional"] = async (id) => {
+    if (!user) {
+      console.warn("[AdicionaisContext] removeAdicional chamado sem user");
+      return;
+    }
+
+    // tenta deletar o registro na Supabase filtrando por id e user_id
+    const { error, count } = await supabase
+      .from("adicionais")
+      .delete({ count: "exact" })
+      .eq("id", id)
+      .eq("user_id", user.id); // OK
+
+    if (error) {
+      console.error("[AdicionaisContext] Erro ao excluir adicional:", error, { id, userId: user.id });
+      throw error;
+    }
+
+    if (count === 0) {
+      console.warn("[AdicionaisContext] Nenhum adicional removido (id não encontrado ou não pertence ao usuário)", {
+        id,
+        userId: user.id,
+      });
+      return;
+    }
+
+    // se removeu na Supabase, remove também do estado local
+    setAdicionais((prev) => prev.filter((a) => a.id !== id));
   };
 
   return (
@@ -47,10 +216,9 @@ export const AdicionaisProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   );
 };
 
-export const useAdicionaisContext = () => {
-  const ctx = useContext(AdicionaisContext);
-  if (!ctx) {
-    throw new Error("useAdicionaisContext deve ser usado dentro de AdicionaisProvider");
-  }
-  return ctx;
-};
+// load -> .eq("user_id", user.id)
+// addAdicional -> payload.user_id = user.id
+// updateAdicional -> .eq("id", id).eq("user_id", user.id)
+// removeAdicional -> .eq("id", id).eq("user_id", user.id)
+
+// Nada faltando.

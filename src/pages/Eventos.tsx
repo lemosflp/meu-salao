@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,13 +19,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
 export default function Eventos() {
+  const location = useLocation();
+  const locationShowForm = (location.state as any)?.showForm as boolean | undefined;
   const { eventos, clientes, addEvento, updateEvento, removeEvento } = useAppContext();
   const { pacotes } = usePacotesContext();
   const { adicionais } = useAdicionaisContext();
   const { equipes } = useEquipesContext();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(!!locationShowForm);
 
   const [editingEventoId, setEditingEventoId] = useState<string | null>(null);
   const [selectedEventoId, setSelectedEventoId] = useState<string | null>(null);
@@ -308,7 +311,7 @@ export default function Eventos() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const aniversariantesValidos = (formData.aniversariantes || []).filter(
@@ -388,13 +391,13 @@ export default function Eventos() {
     };
 
     if (editingEventoId) {
-      updateEvento(editingEventoId, payloadBase);
+      await updateEvento(editingEventoId, payloadBase);
       toast({
         title: "Evento atualizado com sucesso!",
         description: `${payloadBase.titulo} foi atualizado.`,
       });
     } else {
-      addEvento(payloadBase);
+      await addEvento(payloadBase);
       toast({
         title: "Evento cadastrado com sucesso!",
         description: `${payloadBase.titulo} foi adicionado ao calendário.`,

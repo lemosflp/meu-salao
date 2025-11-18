@@ -1,66 +1,110 @@
-import { createContext, useContext, useState, ReactNode } from "react";
-import { Cliente, Evento } from "@/types";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import type { Cliente, Evento } from "@/types";
+import {
+  getClientesApi,
+  createClienteApi,
+  updateClienteApi,
+  getEventosApi,
+  createEventoApi,
+  updateEventoApi,
+  deleteEventoApi,
+} from "@/services/supabaseApi";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface AppContextType {
+type AppContextValue = {
   clientes: Cliente[];
   eventos: Evento[];
-  addCliente: (cliente: Omit<Cliente, 'id' | 'createdAt'>) => void;
-  addEvento: (evento: Omit<Evento, 'id'>) => void;
-  updateEvento: (id: string, data: Partial<Omit<Evento, "id">>) => void;
-  removeEvento: (id: string) => void;
-}
-
-const AppContext = createContext<AppContextType | undefined>(undefined);
-
-export const useAppContext = () => {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useAppContext must be used within an AppProvider');
-  }
-  return context;
+  addCliente: (data: Omit<Cliente, "id" | "userId" | "createdAt">) => Promise<void>;
+  updateCliente: (id: string, patch: Partial<Cliente>) => Promise<void>;
+  addEvento: (data: Omit<Evento, "id" | "userId">) => Promise<void>;
+  updateEvento: (id: string, patch: Partial<Evento>) => Promise<void>;
+  removeEvento: (id: string) => Promise<void>;
 };
 
-export const AppProvider = ({ children }: { children: ReactNode }) => {
+const AppContext = createContext<AppContextValue | undefined>(undefined);
+
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
 
-  const addCliente = (novoCliente: Omit<Cliente, 'id' | 'createdAt'>) => {
-    const cliente: Cliente = {
-      ...novoCliente,
-      id: (clientes.length + 1).toString(),
-      createdAt: new Date().toISOString(),
+  useEffect(() => {
+    if (!user) {
+      setClientes([]);
+      setEventos([]);
+      return;
+    }
+
+    const load = async () => {
+      const [clientesDb, eventosDb] = await Promise.all([
+        getClientesApi(),
+        getEventosApi(),
+      ]);
+      setClientes(clientesDb);
+      setEventos(eventosDb);
     };
-    setClientes(prev => [...prev, cliente]);
+    load();
+  }, [user]);
+
+  const addCliente = async (data: Omit<Cliente, "id" | "userId" | "createdAt">) => {
+    const novo = await createClienteApi(data);
+    if (!novo) return;
+    setClientes((prev) => [...prev, novo]);
   };
 
-  const addEvento = (novoEvento: Omit<Evento, 'id'>) => {
-    const evento: Evento = {
-      ...novoEvento,
-      id: (eventos.length + 1).toString(),
-    };
-    setEventos(prev => [...prev, evento]);
+  const updateCliente = async (id: string, patch: Partial<Cliente>) => {
+    const atualizado = await updateClienteApi(id, patch);
+    if (!atualizado) return;
+    setClientes((prev) => prev.map((c) => (c.id === id ? atualizado : c)));
   };
 
-  const updateEvento = (id: string, data: Partial<Omit<Evento, "id">>) => {
-    setEventos(prev =>
-      prev.map(ev => (ev.id === id ? { ...ev, ...data } : ev))
-    );
+  const addEvento = async (data: Omit<Evento, "id" | "userId">) => {
+    console.log("[AppContext.addEvento] 1. Chamado com data:", data);
+    
+    const novo = await createEventoApi(data);
+    
+    console.log("[AppContext.addEvento] 2. Retorno de createEventoApi:", novo);
+    
+    if (!novo) {
+      console.error("[AppContext.addEvento] 3. ERRO: createEventoApi retornou null");
+      return;
+    }
+    
+    console.log("[AppContext.addEvento] 4. Adicionando evento ao estado local");
+    setEventos((prev) => [...prev, novo]);
+    console.log("[AppContext.addEvento] 5. Evento adicionado com sucesso");
   };
 
-  const removeEvento = (id: string) => {
-    setEventos(prev => prev.filter(ev => ev.id !== id));
+  const updateEvento = async (id: string, patch: Partial<Evento>) => {
+    const atualizado = await updateEventoApi(id, patch);
+    if (!atualizado) return;
+    setEventos((prev) => prev.map((e) => (e.id === id ? atualizado : e)));
+  };
+
+  const removeEvento = async (id: string) => {
+    await deleteEventoApi(id);
+    setEventos((prev) => prev.filter((e) => e.id !== id));
   };
 
   return (
-    <AppContext.Provider value={{
-      clientes,
-      eventos,
-      addCliente,
-      addEvento,
-      updateEvento,
-      removeEvento,
-    }}>
+    <AppContext.Provider
+      value={{
+        clientes,
+        eventos,
+        addCliente,
+        updateCliente,
+        addEvento,
+        updateEvento,
+        removeEvento,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
+};
+
+export const useAppContext = () => {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error("useAppContext deve ser usado dentro de AppProvider");
+  return ctx;
 };

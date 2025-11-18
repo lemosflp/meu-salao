@@ -9,6 +9,8 @@ import { ptBR } from "date-fns/locale";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  // const { clientes, eventos } = useAppContext();
+  // Esses já vêm filtrados por user_id via supabaseApi.
   const { clientes, eventos } = useAppContext();
 
   // métricas simples
@@ -214,7 +216,7 @@ export default function Dashboard() {
 
             <button
               className="w-full flex items-center justify-between rounded-md border px-3 py-2 hover:bg-slate-50 transition-colors"
-              onClick={() => navigate("/propostas")}
+              onClick={() => navigate("/pacotes")}
             >
               <span className="flex items-center gap-2">
                 <Calendar size={16} />

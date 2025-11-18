@@ -13,6 +13,9 @@ import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Clientes() {
+  // const { clientes, addCliente, updateCliente } = useAppContext();
+  // E no AppContext, os métodos usam getClientesApi/createClienteApi/updateClienteApi,
+  // que já dependem de getCurrentUserId() e filtram por user_id.
   const { clientes, addCliente, updateCliente } = useAppContext() as any;
   const [editingClienteId, setEditingClienteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -93,7 +96,7 @@ export default function Clientes() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
   
     if (!formData.nome || !formData.sobrenome || !formData.cpf || !formData.email) {
@@ -138,22 +141,10 @@ export default function Clientes() {
     }
   
     if (editingClienteId) {
-      // Atualizar cliente existente
-      if (typeof updateCliente === "function") {
-        updateCliente(editingClienteId, {
-          ...formData,
-        });
-      } else {
-        // fallback: se não existir updateCliente, tente atualizar localmente (ajuste conforme seu contexto)
-        const idx = (clientes || []).findIndex((c: any) => c.id === editingClienteId);
-        if (idx !== -1) {
-          clientes[idx] = { ...clientes[idx], ...(formData as any) };
-        }
-      }
+      await updateCliente(editingClienteId, { ...formData } as any);
       toast({ title: "Cadastro atualizado com sucesso" });
     } else {
-      // Criar novo cliente
-      addCliente(formData as any);
+      await addCliente(formData as any);
       toast({ title: "Cliente cadastrado com sucesso" });
     }
   
