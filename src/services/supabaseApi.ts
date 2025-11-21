@@ -226,8 +226,9 @@ export async function getEventosApi(): Promise<Evento[]> {
       return [];
     }
 
-    // Buscar aniversariantes para todos os eventos
     const eventoIds = data.map(e => e.id);
+
+    // Buscar aniversariantes
     const { data: aniversariantesData, error: anivError } = await supabase
       .from("evento_aniversariantes")
       .select("*")
@@ -237,6 +238,45 @@ export async function getEventosApi(): Promise<Evento[]> {
     if (anivError) {
       console.error("[getEventosApi] Erro ao buscar aniversariantes:", anivError);
     }
+
+    // NOVO: Buscar IDs dos adicionais
+    const { data: adicionaisIdsData, error: idsError } = await supabase
+      .from("evento_adicionais")
+      .select("*")
+      .in("evento_id", eventoIds)
+      .eq("user_id", userId);
+
+    if (idsError) {
+      console.error("[getEventosApi] Erro ao buscar adicionais IDs:", idsError);
+    }
+
+    // Buscar observações de adicionais
+    const { data: adicionaisObsData } = await supabase
+      .from("evento_adicionais_observacoes")
+      .select("*")
+      .in("evento_id", eventoIds)
+      .eq("user_id", userId);
+
+    // Buscar quantidades de adicionais
+    const { data: adicionaisQtdData } = await supabase
+      .from("evento_adicionais_quantidade")
+      .select("*")
+      .in("evento_id", eventoIds)
+      .eq("user_id", userId);
+
+    // NOVO: Buscar profissionais da equipe
+    const { data: equipeProfissionaisData } = await supabase
+      .from("evento_equipe_profissionais")
+      .select("*")
+      .in("evento_id", eventoIds)
+      .eq("user_id", userId);
+
+    // NOVO: Buscar pagamentos
+    const { data: pagamentosData } = await supabase
+      .from("evento_pagamentos")
+      .select("*")
+      .in("evento_id", eventoIds)
+      .eq("user_id", userId);
 
     // Mapear aniversariantes por evento_id
     const aniversariantesPorEvento: Record<string, any[]> = {};
@@ -251,7 +291,71 @@ export async function getEventosApi(): Promise<Evento[]> {
       });
     });
 
-    // Mapeamento rápido com aniversariantes
+    // NOVO: Mapear IDs de adicionais por evento_id
+    const adicionaisIdsPorEvento: Record<string, string[]> = {};
+    adicionaisIdsData?.forEach(item => {
+      if (!adicionaisIdsPorEvento[item.evento_id]) {
+        adicionaisIdsPorEvento[item.evento_id] = [];
+      }
+      adicionaisIdsPorEvento[item.evento_id].push(item.adicional_id);
+    });
+
+    // Mapear observações por evento_id
+    const adicionaisObsPorEvento: Record<string, any[]> = {};
+    adicionaisObsData?.forEach(obs => {
+      if (!adicionaisObsPorEvento[obs.evento_id]) {
+        adicionaisObsPorEvento[obs.evento_id] = [];
+      }
+      adicionaisObsPorEvento[obs.evento_id].push({
+        adicionalId: obs.adicional_id,
+        observacao: obs.observacao,
+      });
+    });
+
+    // Mapear quantidades por evento_id
+    const adicionaisQtdPorEvento: Record<string, any[]> = {};
+    adicionaisQtdData?.forEach(qtd => {
+      if (!adicionaisQtdPorEvento[qtd.evento_id]) {
+        adicionaisQtdPorEvento[qtd.evento_id] = [];
+      }
+      adicionaisQtdPorEvento[qtd.evento_id].push({
+        adicionalId: qtd.adicional_id,
+        quantidade: qtd.quantidade,
+      });
+    });
+
+    // NOVO: Mapear profissionais por evento_id
+    const equipeProfissionaisPorEvento: Record<string, any[]> = {};
+    equipeProfissionaisData?.forEach(prof => {
+      if (!equipeProfissionaisPorEvento[prof.evento_id]) {
+        equipeProfissionaisPorEvento[prof.evento_id] = [];
+      }
+      equipeProfissionaisPorEvento[prof.evento_id].push({
+        id: prof.profissional_id || prof.id,
+        nome: prof.nome,
+        quantidade: prof.quantidade,
+      });
+    });
+
+    // Mapear pagamentos por evento_id
+    const pagamentosPorEvento: Record<string, any[]> = {};
+    pagamentosData?.forEach(pag => {
+      if (!pagamentosPorEvento[pag.evento_id]) {
+        pagamentosPorEvento[pag.evento_id] = [];
+      }
+      pagamentosPorEvento[pag.evento_id].push({
+        id: pag.id,
+        eventoId: pag.evento_id,
+        userId: pag.user_id,
+        valor: Number(pag.valor),
+        data: pag.data,
+        metodo: pag.metodo,
+        observacoes: pag.observacoes,
+        createdAt: pag.created_at,
+      });
+    });
+
+    // Mapeamento rápido com todos os dados relacionados
     const mapped = data.map((ev: any) => ({
       id: ev.id,
       userId: ev.user_id,
@@ -272,10 +376,11 @@ export async function getEventosApi(): Promise<Evento[]> {
       valorEntrada: ev.valor_entrada,
       formaPagamento: ev.forma_pagamento,
       aniversariantes: aniversariantesPorEvento[ev.id] || [],
-      adicionaisIds: ev.adicionais_ids || [],
-      adicionaisObservacoes: ev.adicionais_observacoes || [],
-      adicionaisQuantidade: ev.adicionais_quantidade || [],
-      equipeProfissionais: ev.equipe_profissionais || [],
+      adicionaisIds: adicionaisIdsPorEvento[ev.id] || [],
+      adicionaisObservacoes: adicionaisObsPorEvento[ev.id] || [],
+      adicionaisQuantidade: adicionaisQtdPorEvento[ev.id] || [],
+      equipeProfissionais: equipeProfissionaisPorEvento[ev.id] || [],
+      pagamentos: pagamentosPorEvento[ev.id] || [],
     } as Evento));
 
     console.log("[getEventosApi] Mapeamento concluído:", mapped.length, "eventos");
@@ -400,14 +505,32 @@ export async function createEventoApi(
       if (profError) console.error("Erro ao inserir profissionais:", profError);
     }
 
-    // Retornar o evento com os dados relacionados carregados
+    // NOVO: Retornar o evento completo com todos os dados relacionados carregados
     return {
-      ...eventoData,
+      id: eventoData.id,
+      userId: eventoData.user_id,
+      titulo: eventoData.titulo,
+      clienteId: eventoData.cliente_id,
+      clienteNome: eventoData.cliente_nome,
+      data: eventoData.data,
+      horaInicio: eventoData.hora_inicio,
+      horaFim: eventoData.hora_fim,
+      tipo: eventoData.tipo,
+      status: eventoData.status,
+      observacoes: eventoData.observacoes,
+      valor: Number(eventoData.valor),
+      pacoteId: eventoData.pacote_id,
+      convidados: eventoData.convidados,
+      decoracao: eventoData.decoracao,
+      equipeId: eventoData.equipe_id,
+      valorEntrada: eventoData.valor_entrada,
+      formaPagamento: eventoData.forma_pagamento,
       aniversariantes: evento.aniversariantes || [],
-      equipeProfissionais: evento.equipeProfissionais || [],
       adicionaisIds: evento.adicionaisIds || [],
       adicionaisObservacoes: evento.adicionaisObservacoes || [],
       adicionaisQuantidade: evento.adicionaisQuantidade || [],
+      equipeProfissionais: evento.equipeProfissionais || [],
+      pagamentos: [],
     } as Evento;
   } catch (err) {
     console.error("[createEventoApi] EXCEPTION:", err);
@@ -485,9 +608,92 @@ export async function updateEventoApi(
       }
     }
 
+    // NOVO: Retornar o evento com todos os dados relacionados
+    // Buscar dados relacionados atualizados
+    const { data: aniversariantesData } = await supabase
+      .from("evento_aniversariantes")
+      .select("*")
+      .eq("evento_id", id)
+      .eq("user_id", userId);
+
+    const { data: adicionaisIdsData } = await supabase
+      .from("evento_adicionais")
+      .select("*")
+      .eq("evento_id", id)
+      .eq("user_id", userId);
+
+    const { data: adicionaisObsData } = await supabase
+      .from("evento_adicionais_observacoes")
+      .select("*")
+      .eq("evento_id", id)
+      .eq("user_id", userId);
+
+    const { data: adicionaisQtdData } = await supabase
+      .from("evento_adicionais_quantidade")
+      .select("*")
+      .eq("evento_id", id)
+      .eq("user_id", userId);
+
+    const { data: equipeProfissionaisData } = await supabase
+      .from("evento_equipe_profissionais")
+      .select("*")
+      .eq("evento_id", id)
+      .eq("user_id", userId);
+
+    const { data: pagamentosData } = await supabase
+      .from("evento_pagamentos")
+      .select("*")
+      .eq("evento_id", id)
+      .eq("user_id", userId);
+
     return {
-      ...data,
-      aniversariantes: patch.aniversariantes || [],
+      id: data.id,
+      userId: data.user_id,
+      titulo: data.titulo,
+      clienteId: data.cliente_id,
+      clienteNome: data.cliente_nome,
+      data: data.data,
+      horaInicio: data.hora_inicio,
+      horaFim: data.hora_fim,
+      tipo: data.tipo,
+      status: data.status,
+      observacoes: data.observacoes,
+      valor: Number(data.valor),
+      pacoteId: data.pacote_id,
+      convidados: data.convidados,
+      decoracao: data.decoracao,
+      equipeId: data.equipe_id,
+      valorEntrada: data.valor_entrada,
+      formaPagamento: data.forma_pagamento,
+      aniversariantes: aniversariantesData?.map(a => ({
+        id: a.id,
+        nome: a.nome,
+        idade: a.idade,
+      })) || [],
+      adicionaisIds: adicionaisIdsData?.map(a => a.adicional_id) || [],
+      adicionaisObservacoes: adicionaisObsData?.map(o => ({
+        adicionalId: o.adicional_id,
+        observacao: o.observacao,
+      })) || [],
+      adicionaisQuantidade: adicionaisQtdData?.map(q => ({
+        adicionalId: q.adicional_id,
+        quantidade: q.quantidade,
+      })) || [],
+      equipeProfissionais: equipeProfissionaisData?.map(p => ({
+        id: p.profissional_id || p.id,
+        nome: p.nome,
+        quantidade: p.quantidade,
+      })) || [],
+      pagamentos: pagamentosData?.map(p => ({
+        id: p.id,
+        eventoId: p.evento_id,
+        userId: p.user_id,
+        valor: Number(p.valor),
+        data: p.data,
+        metodo: p.metodo,
+        observacoes: p.observacoes,
+        createdAt: p.created_at,
+      })) || [],
     } as Evento;
   } catch (err) {
     console.error("updateEventoApi - erro de autenticação:", err);
@@ -645,6 +851,7 @@ export async function updateAdicionalApi(
       createdAt: data.created_at,
     };
   } catch (err) {
+
     console.error("updateAdicionalApi - erro de autenticação:", err);
     return null;
   }
@@ -669,5 +876,107 @@ export async function deleteAdicionalApi(id: string): Promise<void> {
     }
   } catch (err) {
     console.error("deleteAdicionalApi - erro de autenticação:", err);
+  }
+}
+// --- PAGAMENTOS ---
+
+export async function getPagamentosEventoApi(eventoId: string): Promise<Pagamento[]> {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return [];
+
+    const { data, error } = await supabase
+      .from("evento_pagamentos")
+      .select("*")
+      .eq("evento_id", eventoId)
+      .eq("user_id", userId)
+      .order("data", { ascending: false });
+
+    if (error) {
+      console.error("Erro ao buscar pagamentos:", error);
+      return [];
+    }
+
+    return (
+      data?.map((p: any) => ({
+        id: p.id,
+        eventoId: p.evento_id,
+        userId: p.user_id,
+        valor: Number(p.valor),
+        data: p.data,
+        metodo: p.metodo,
+        observacoes: p.observacoes,
+        createdAt: p.created_at,
+      })) || []
+    );
+  } catch (err) {
+    console.error("getPagamentosEventoApi - erro:", err);
+    return [];
+  }
+}
+
+export async function createPagamentoApi(
+  pagamento: Omit<Pagamento, "id" | "userId" | "createdAt">
+): Promise<Pagamento | null> {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      console.warn("[supabaseApi] createPagamentoApi chamado sem user autenticado");
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from("evento_pagamentos")
+      .insert({
+        user_id: userId,
+        evento_id: pagamento.eventoId,
+        valor: pagamento.valor,
+        data: pagamento.data,
+        metodo: pagamento.metodo,
+        observacoes: pagamento.observacoes || null,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("Erro ao criar pagamento:", error);
+      return null;
+    }
+
+    return {
+      id: data.id,
+      eventoId: data.evento_id,
+      userId: data.user_id,
+      valor: Number(data.valor),
+      data: data.data,
+      metodo: data.metodo,
+      observacoes: data.observacoes,
+      createdAt: data.created_at,
+    };
+  } catch (err) {
+    console.error("createPagamentoApi - erro:", err);
+    return null;
+  }
+}
+
+export async function deletePagamentoApi(id: string): Promise<void> {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      console.warn("[supabaseApi] deletePagamentoApi chamado sem user autenticado");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("evento_pagamentos")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("Erro ao remover pagamento:", error);
+    }
+  } catch (err) {
+    console.error("deletePagamentoApi - erro:", err);
   }
 }

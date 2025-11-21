@@ -72,6 +72,19 @@ export interface Evento {
     nome: string;
     quantidade: number;
   }[];
+
+  pagamentos?: Pagamento[];
+}
+
+export interface Pagamento {
+  id: string;              // uuid (evento_pagamentos.id)
+  eventoId: string;        // uuid (evento_pagamentos.evento_id)
+  userId: string;          // uuid (evento_pagamentos.user_id)
+  valor: number;           // numeric(12,2)
+  data: string;            // date -> string yyyy-MM-dd
+  metodo: string;          // varchar (ex: Pix, Dinheiro, Cartão, etc)
+  observacoes?: string;    // text
+  createdAt: string;       // timestamptz
 }
 
 // Removido tipo Contrato
