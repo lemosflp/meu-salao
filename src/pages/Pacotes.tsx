@@ -420,7 +420,7 @@ export default function Pacotes() {
                   name="nomeEquipe"
                   value={equipeNome}
                   onChange={e => setEquipeNome(e.target.value)}
-                  placeholder="Ex: Equipe de Decoração Premium"
+                  placeholder="Ex: Infantil"
                   required
                   className="text-base"
                 />

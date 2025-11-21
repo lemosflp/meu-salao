@@ -124,19 +124,7 @@ export const Layout = ({ children }: LayoutProps) => {
 
         {/* rodapé: Conta / Ajuda / Sair */}
         <div className="border-t border-blue-600 px-3 py-3 text-sm space-y-1">
-          <NavLink
-            to="/conta"
-            className={({ isActive }) =>
-              `flex items-center gap-2 rounded-md px-3 py-2 transition ${
-                isActive
-                  ? "bg-white text-blue-700 shadow-sm"
-                  : "text-blue-100 hover:bg-blue-600 hover:text-white"
-              }`
-            }
-          >
-            <User size={16} />
-            <span>Conta</span>
-          </NavLink>
+
 
           <NavLink
             to="/ajuda"

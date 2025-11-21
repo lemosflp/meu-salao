@@ -15,7 +15,6 @@ import Eventos from "./pages/Eventos";
 import Pacotes from "./pages/Pacotes";
 import Clientes from "./pages/Clientes";
 import Relatorios from "./pages/Relatorios";
-import Conta from "./pages/Conta";
 import Ajuda from "./pages/Ajuda";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
@@ -47,9 +46,7 @@ function PrivateRoutes() {
         <Route path="/propostas" element={<Pacotes />} />
         <Route path="/clientes" element={<Clientes />} />
         <Route path="/relatorios" element={<Relatorios />} />
-        <Route path="/conta" element={<Conta />} />
         <Route path="/ajuda" element={<Ajuda />} />
-        <Route path="/logout" element={<Dashboard />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

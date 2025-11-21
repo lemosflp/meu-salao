@@ -848,7 +848,7 @@ export default function Eventos() {
                       id="decoracao"
                       value={formData.decoracao || ""}
                       onChange={(e) => handleInputChange("decoracao", e.target.value)}
-                      placeholder="Decoração (ex: balões, cores, tema)"
+                      placeholder="Decoração (ex: Jardim)"
                     />
                   </div>
                 </div>
@@ -1103,7 +1103,7 @@ export default function Eventos() {
                       id="formaPagamento"
                       value={formData.formaPagamento || ""}
                       onChange={e => handleInputChange("formaPagamento", e.target.value)}
-                      placeholder="Ex.: 50% entrada, 50% após o evento"
+                      placeholder="Ex.: Pix"
                     />
                   </div>
                 </div>

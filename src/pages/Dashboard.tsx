@@ -1,9 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/contexts/AppContext";
-import { Calendar, Users, PartyPopper, CheckCircle2, Clock, ArrowRight } from "lucide-react";
+import { Calendar, Users, PartyPopper, CheckCircle2, Clock, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { format, isAfter, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
@@ -16,6 +16,7 @@ export default function Dashboard() {
   const { clientes, eventos } = useAppContext();
   const { pacotes } = usePacotesContext();
   const { adicionais } = useAdicionaisContext();
+  const [showFinancialValues, setShowFinancialValues] = useState(false);
 
   // métricas simples
   const totalClientes = clientes.length;
@@ -35,6 +36,29 @@ export default function Dashboard() {
       .sort((a, b) => parseISO(a.data).getTime() - parseISO(b.data).getTime())
       .slice(0, 4);
   }, [eventos]);
+
+  // Calcular valores do mês atual
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  
+  const eventosDoMes = useMemo(() => {
+    return eventos.filter(e => {
+      const date = parseISO(e.data);
+      return date.getMonth() + 1 === currentMonth && date.getFullYear() === currentYear;
+    });
+  }, [eventos]);
+
+  const faturamentoMes = useMemo(
+    () => eventosDoMes.reduce((sum, e) => sum + (e.valor || 0), 0),
+    [eventosDoMes]
+  );
+
+  const entradasMes = useMemo(
+    () => eventosDoMes.reduce((sum, e) => sum + (e.valorEntrada || 0), 0),
+    [eventosDoMes]
+  );
+
+  const saldoMes = faturamentoMes - entradasMes;
 
   const stats = [
     { label: "Total de Clientes", value: clientes.length, icon: Users, color: "bg-blue-600" },
@@ -124,26 +148,55 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Resumo de Vendas */}
+        {/* Resumo de Vendas - Mês Atual */}
         <Card className="border-l-4 border-l-blue-500 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-cyan-50 to-blue-50 border-b border-blue-200">
-            <CardTitle className="flex items-center gap-2 text-blue-800">
-              <TrendingUp size={20} />
-              Resumo Financeiro
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-blue-800">
+                <TrendingUp size={20} />
+                Resumo Financeiro - {format(new Date(), "MMMM/yyyy", { locale: ptBR })}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFinancialValues(!showFinancialValues)}
+                className="text-slate-600 hover:text-blue-700"
+              >
+                {showFinancialValues ? (
+                  <Eye size={18} />
+                ) : (
+                  <EyeOff size={18} />
+                )}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-3">
               <div className="p-3 bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-lg">
                 <p className="text-xs text-slate-600">Valor Total em Eventos</p>
                 <p className="text-2xl font-bold text-blue-700 mt-1">
-                  R$ {eventos.reduce((sum, e) => sum + (e.valor || 0), 0).toLocaleString('pt-BR')}
+                  {showFinancialValues 
+                    ? `R$ ${faturamentoMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                    : "••••••"
+                  }
                 </p>
               </div>
               <div className="p-3 bg-gradient-to-br from-green-50 to-white border border-green-200 rounded-lg">
-                <p className="text-xs text-slate-600">Eventos Confirmados</p>
+                <p className="text-xs text-slate-600">Entradas Recebidas</p>
                 <p className="text-2xl font-bold text-green-700 mt-1">
-                  {eventos.filter(e => e.status === 'confirmado').length}
+                  {showFinancialValues 
+                    ? `R$ ${entradasMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                    : "••••••"
+                  }
+                </p>
+              </div>
+              <div className="p-3 bg-gradient-to-br from-orange-50 to-white border border-orange-200 rounded-lg">
+                <p className="text-xs text-slate-600">Saldo a Receber</p>
+                <p className="text-2xl font-bold text-orange-700 mt-1">
+                  {showFinancialValues 
+                    ? `R$ ${saldoMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                    : "••••••"
+                  }
                 </p>
               </div>
             </div>
