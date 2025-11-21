@@ -163,26 +163,27 @@ export default function Calendario() {
   }, [eventosProcessados, currentDate]);
 
   return (
-    <div className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <div className="p-3 md:p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground">Calendário</h1>
-        <p className="text-muted-foreground mt-2">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-4xl font-bold text-foreground">Calendário</h1>
+        <p className="text-sm md:text-base text-muted-foreground mt-2">
           Visualize os eventos cadastrados na semana
         </p>
       </div>
 
-      <div className="flex justify-end mb-8">
+      <div className="flex justify-end mb-6 md:mb-8">
         <Button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 md:px-6 flex items-center gap-2 text-sm md:text-base"
           onClick={() => navigate("/eventos", { state: { showForm: true } })}
         >
-          <Plus size={18} />
-          Cadastrar Evento
+          <Plus size={16} className="md:w-5 md:h-5" />
+          <span className="hidden sm:inline">Cadastrar Evento</span>
+          <span className="sm:hidden">Novo</span>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
         {/* Calendário semanal */}
         <div className="lg:col-span-3">
           <Card className="border-l-4 border-l-blue-600 shadow-lg bg-white">
@@ -214,19 +215,20 @@ export default function Calendario() {
             </CardHeader>
             <CardContent className="pt-6">
               {/* Cabeçalho dos dias */}
-              <div className="grid grid-cols-7 gap-2 mb-4">
+              <div className="grid grid-cols-7 gap-1 md:gap-2 mb-4">
                 {dayLabels.map((label, index) => (
                   <div
                     key={index}
-                    className="text-center font-semibold text-blue-700 p-2 text-sm bg-blue-50 rounded border border-blue-200"
+                    className="text-center font-semibold text-blue-700 p-1 md:p-2 text-xs md:text-sm bg-blue-50 rounded border border-blue-200"
                   >
-                    {label}
+                    <span className="hidden sm:inline">{label}</span>
+                    <span className="sm:hidden">{label.charAt(0)}</span>
                   </div>
                 ))}
               </div>
 
               {/* Grade da semana */}
-              <div className="grid grid-cols-7 gap-2 mb-6">
+              <div className="grid grid-cols-7 gap-1 md:gap-2 mb-6">
                 {weekDays.map((day, index) => {
                   const key = day.toISOString();
                   const eventosDia = eventosPorDia[key] || [];
@@ -236,7 +238,7 @@ export default function Calendario() {
                   return (
                     <div
                       key={index}
-                      className={`min-h-32 border-2 rounded-lg p-3 flex flex-col transition-all ${
+                      className={`min-h-24 md:min-h-32 border-2 rounded-lg p-2 md:p-3 flex flex-col transition-all ${
                         isToday
                           ? "border-blue-500 bg-blue-50"
                           : hasEventos

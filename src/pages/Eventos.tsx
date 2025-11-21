@@ -224,17 +224,12 @@ export default function Eventos() {
     const [hiH, hiM] = formData.horaInicio.split(":").map(Number);
     const [hfH, hfM] = formData.horaFim.split(":").map(Number);
     const inicioMin = hiH * 60 + hiM;
-    const fimMin = hfH * 60 + hfM;
+    let fimMin = hfH * 60 + hfM;
+    
+    // Se o horário de fim for menor que o de início, significa que passou da meia-noite
+    // Adiciona 24h (1440 minutos) ao horário de fim
     if (fimMin <= inicioMin) {
-      return {
-        extra: 0,
-        extraInt: 0,
-        deficit: 0,
-        deficitInt: 0,
-        hasExtra: false,
-        hasDeficit: false,
-        duracaoHoras: 0,
-      };
+      fimMin += 24 * 60; // Adiciona 1440 minutos (24 horas)
     }
 
     const duracaoMin = fimMin - inicioMin;
