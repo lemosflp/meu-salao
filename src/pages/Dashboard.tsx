@@ -6,12 +6,16 @@ import { useAppContext } from "@/contexts/AppContext";
 import { Calendar, Users, PartyPopper, CheckCircle2, Clock, ArrowRight } from "lucide-react";
 import { format, isAfter, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { usePacotesContext } from "@/contexts/PacotesContext";
+import { useAdicionaisContext } from "@/contexts/AdicionaisContext";
+import { Package, TrendingUp } from "lucide-react";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  // const { clientes, eventos } = useAppContext();
-  // Esses já vêm filtrados por user_id via supabaseApi.
   const { clientes, eventos } = useAppContext();
+  const { pacotes } = usePacotesContext();
+  const { adicionais } = useAdicionaisContext();
 
   // métricas simples
   const totalClientes = clientes.length;
@@ -32,212 +36,159 @@ export default function Dashboard() {
       .slice(0, 4);
   }, [eventos]);
 
+  const stats = [
+    { label: "Total de Clientes", value: clientes.length, icon: Users, color: "bg-blue-600" },
+    { label: "Eventos Cadastrados", value: eventos.length, icon: Calendar, color: "bg-blue-500" },
+    { label: "Propostas Ativas", value: pacotes.length, icon: Package, color: "bg-blue-700" },
+    { label: "Adicionais", value: adicionais.length, icon: TrendingUp, color: "bg-blue-600" },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Topo: saudação + CTA principal */}
-      <section className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Olá, bem-vindo(a) 👋</h1>
-          <p className="text-muted-foreground mt-1">
-            Acompanhe rapidamente seus eventos e clientes do salão.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            className="bg-primary hover:bg-primary-hover text-primary-foreground"
-            onClick={() => navigate("/eventos")}
-          >
-            <PartyPopper size={18} className="mr-2" />
-            Cadastrar novo evento
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/calendario")}
-          >
-            <Calendar size={16} className="mr-2" />
-            Ver calendário
-          </Button>
-        </div>
-      </section>
+    <div className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground mt-2">Bem-vindo ao seu painel de controle</p>
+      </div>
 
-      {/* Cards-resumo principais */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Card className="border border-slate-200">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Clientes cadastrados
+      {/* Cards de Estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {stats.map((stat, idx) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={idx} className="border-l-4 border-l-blue-600 shadow-lg hover:shadow-xl transition">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">{stat.label}</p>
+                    <p className="text-3xl font-bold text-foreground mt-2">{stat.value}</p>
+                  </div>
+                  <div className={`${stat.color} p-3 rounded-lg`}>
+                    <Icon size={24} className="text-white" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Grid de conteúdo */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Próximos Eventos */}
+        <Card className="border-l-4 border-l-blue-600 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+            <CardTitle className="flex items-center gap-2 text-blue-900">
+              <Calendar size={20} />
+              Próximos Eventos
             </CardTitle>
-            <Users size={18} className="text-slate-400" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">{totalClientes}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Pessoas na sua base de contatos.
-            </p>
+          <CardContent className="pt-6">
+            {proximosEventos.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Nenhum evento próximo</p>
+                <Button
+                  size="sm"
+                  className="mt-3 bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => navigate("/eventos")}
+                >
+                  + Cadastrar Evento
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {proximosEventos.map(evento => (
+                  <div
+                    key={evento.id}
+                    className="p-3 border border-blue-200 rounded-lg bg-gradient-to-r from-blue-50 to-white hover:shadow-md transition"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold text-blue-900">{evento.titulo}</h4>
+                        <p className="text-xs text-slate-600 mt-1">
+                          📅 {new Date(evento.data).toLocaleDateString('pt-BR')} às {evento.horaInicio}
+                        </p>
+                      </div>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                        evento.status === 'confirmado' 
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {evento.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="border border-slate-200">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Eventos confirmados
-            </CardTitle>
-            <CheckCircle2 size={18} className="text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">{totalConfirmados}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Festas já garantidas na agenda.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-slate-200">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Eventos pendentes
-            </CardTitle>
-            <Clock size={18} className="text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">{totalPendentes}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Orçamentos aguardando confirmação.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-slate-200">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Faturamento estimado
+        {/* Resumo de Vendas */}
+        <Card className="border-l-4 border-l-blue-500 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-cyan-50 to-blue-50 border-b border-blue-200">
+            <CardTitle className="flex items-center gap-2 text-blue-800">
+              <TrendingUp size={20} />
+              Resumo Financeiro
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">
-              R$ {faturamentoEstimado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+          <CardContent className="pt-6">
+            <div className="space-y-3">
+              <div className="p-3 bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-lg">
+                <p className="text-xs text-slate-600">Valor Total em Eventos</p>
+                <p className="text-2xl font-bold text-blue-700 mt-1">
+                  R$ {eventos.reduce((sum, e) => sum + (e.valor || 0), 0).toLocaleString('pt-BR')}
+                </p>
+              </div>
+              <div className="p-3 bg-gradient-to-br from-green-50 to-white border border-green-200 rounded-lg">
+                <p className="text-xs text-slate-600">Eventos Confirmados</p>
+                <p className="text-2xl font-bold text-green-700 mt-1">
+                  {eventos.filter(e => e.status === 'confirmado').length}
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Soma do valor de todos os eventos cadastrados.
-            </p>
           </CardContent>
         </Card>
-      </section>
+      </div>
 
-      {/* Linha inferior: próximos eventos + atalhos rápidos */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Próximos eventos */}
-        <Card className="lg:col-span-2 border border-slate-200">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <div>
-              <CardTitle className="text-base">Próximos eventos</CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">
-                Os próximos compromissos na sua agenda.
-              </p>
-            </div>
+      {/* Ações Rápidas */}
+      <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-200">
+        <CardHeader className="bg-gradient-to-r from-blue-100 to-blue-50 border-b border-blue-200">
+          <CardTitle className="text-blue-900">Ações Rápidas</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Button
               variant="outline"
-              size="sm"
-              onClick={() => navigate("/calendario")}
-            >
-              Ver calendário completo
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {proximosEventos.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Nenhum evento futuro cadastrado no momento.
-              </p>
-            )}
-
-            {proximosEventos.map((ev) => (
-              <div
-                key={ev.id}
-                className="flex items-center justify-between rounded-md border px-3 py-2 hover:bg-slate-50 transition-colors text-sm"
-              >
-                <div className="flex flex-col">
-                  <span className="font-medium text-foreground">
-                    {ev.titulo || "Evento"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {ev.clienteNome} • {format(parseISO(ev.data), "dd/MM/yyyy", { locale: ptBR })} •{" "}
-                    {ev.horaInicio}
-                    {ev.horaFim && ` - ${ev.horaFim}`}
-                  </span>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                    {ev.tipo}
-                  </span>
-                  <span
-                    className={`text-[11px] px-2 py-0.5 rounded-full ${
-                      ev.status === "confirmado"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : ev.status === "pendente"
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {ev.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Atalhos rápidos */}
-        <Card className="border border-slate-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Atalhos rápidos</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <button
-              className="w-full flex items-center justify-between rounded-md border px-3 py-2 hover:bg-slate-50 transition-colors"
+              className="border-blue-300 text-blue-700 hover:bg-blue-50"
               onClick={() => navigate("/eventos")}
             >
-              <span className="flex items-center gap-2">
-                <PartyPopper size={16} />
-                Novo evento
-              </span>
-              <ArrowRight size={14} className="text-muted-foreground" />
-            </button>
-
-            <button
-              className="w-full flex items-center justify-between rounded-md border px-3 py-2 hover:bg-slate-50 transition-colors"
+              + Novo Evento
+            </Button>
+            <Button
+              variant="outline"
+              className="border-blue-300 text-blue-700 hover:bg-blue-50"
               onClick={() => navigate("/clientes")}
             >
-              <span className="flex items-center gap-2">
-                <Users size={16} />
-                Novo cliente
-              </span>
-              <ArrowRight size={14} className="text-muted-foreground" />
-            </button>
-
-            <button
-              className="w-full flex items-center justify-between rounded-md border px-3 py-2 hover:bg-slate-50 transition-colors"
-              onClick={() => navigate("/pacotes")}
+              + Novo Cliente
+            </Button>
+            <Button
+              variant="outline"
+              className="border-blue-300 text-blue-700 hover:bg-blue-50"
+              onClick={() => navigate("/propostas")}
             >
-              <span className="flex items-center gap-2">
-                <Calendar size={16} />
-                Criar/editar proposta
-              </span>
-              <ArrowRight size={14} className="text-muted-foreground" />
-            </button>
-
-            <button
-              className="w-full flex items-center justify-between rounded-md border px-3 py-2 hover:bg-slate-50 transition-colors"
-              onClick={() => navigate("/relatorios")}
+              Gerenciar Propostas
+            </Button>
+            <Button
+              variant="outline"
+              className="border-blue-300 text-blue-700 hover:bg-blue-50"
+              onClick={() => navigate("/calendario")}
             >
-              <span className="flex items-center gap-2">
-                <Clock size={16} />
-                Ver relatórios
-              </span>
-              <ArrowRight size={14} className="text-muted-foreground" />
-            </button>
-          </CardContent>
-        </Card>
-      </section>
+              Ver Calendário
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

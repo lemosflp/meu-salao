@@ -204,19 +204,84 @@ export async function getEventosApi(): Promise<Evento[]> {
     const userId = await getCurrentUserId();
     if (!userId) return [];
 
+    console.log("[getEventosApi] Iniciando busca para user:", userId);
+    const startTime = performance.now();
+
     const { data, error } = await supabase
       .from("eventos")
       .select("*")
       .eq("user_id", userId)
       .order("data", { ascending: false });
 
+    const endTime = performance.now();
+    console.log(`[getEventosApi] Busca concluída em ${(endTime - startTime).toFixed(2)}ms. Eventos encontrados: ${data?.length || 0}`);
+
     if (error) {
-      console.error("Erro ao buscar eventos:", error);
+      console.error("[getEventosApi] Erro ao buscar eventos:", error);
       return [];
     }
-    return (data || []) as Evento[];
+
+    if (!data || data.length === 0) {
+      console.log("[getEventosApi] Nenhum evento encontrado");
+      return [];
+    }
+
+    // Buscar aniversariantes para todos os eventos
+    const eventoIds = data.map(e => e.id);
+    const { data: aniversariantesData, error: anivError } = await supabase
+      .from("evento_aniversariantes")
+      .select("*")
+      .in("evento_id", eventoIds)
+      .eq("user_id", userId);
+
+    if (anivError) {
+      console.error("[getEventosApi] Erro ao buscar aniversariantes:", anivError);
+    }
+
+    // Mapear aniversariantes por evento_id
+    const aniversariantesPorEvento: Record<string, any[]> = {};
+    aniversariantesData?.forEach(aniv => {
+      if (!aniversariantesPorEvento[aniv.evento_id]) {
+        aniversariantesPorEvento[aniv.evento_id] = [];
+      }
+      aniversariantesPorEvento[aniv.evento_id].push({
+        id: aniv.id,
+        nome: aniv.nome,
+        idade: aniv.idade,
+      });
+    });
+
+    // Mapeamento rápido com aniversariantes
+    const mapped = data.map((ev: any) => ({
+      id: ev.id,
+      userId: ev.user_id,
+      titulo: ev.titulo || "",
+      clienteId: ev.cliente_id || "",
+      clienteNome: ev.cliente_nome || "",
+      data: ev.data || "",
+      horaInicio: ev.hora_inicio || "",
+      horaFim: ev.hora_fim,
+      tipo: ev.tipo || "festa",
+      status: ev.status || "pendente",
+      observacoes: ev.observacoes,
+      valor: Number(ev.valor) || 0,
+      pacoteId: ev.pacote_id || "",
+      convidados: ev.convidados,
+      decoracao: ev.decoracao,
+      equipeId: ev.equipe_id,
+      valorEntrada: ev.valor_entrada,
+      formaPagamento: ev.forma_pagamento,
+      aniversariantes: aniversariantesPorEvento[ev.id] || [],
+      adicionaisIds: ev.adicionais_ids || [],
+      adicionaisObservacoes: ev.adicionais_observacoes || [],
+      adicionaisQuantidade: ev.adicionais_quantidade || [],
+      equipeProfissionais: ev.equipe_profissionais || [],
+    } as Evento));
+
+    console.log("[getEventosApi] Mapeamento concluído:", mapped.length, "eventos");
+    return mapped;
   } catch (err) {
-    console.error("getEventosApi - erro de autenticação:", err);
+    console.error("[getEventosApi] Exception:", err);
     return [];
   }
 }
@@ -361,9 +426,28 @@ export async function updateEventoApi(
       return null;
     }
 
+    // Preparar patch apenas com campos da tabela eventos (sem arrays relacionados)
+    const dbPatch: any = {};
+    if (patch.titulo !== undefined) dbPatch.titulo = patch.titulo;
+    if (patch.clienteId !== undefined) dbPatch.cliente_id = patch.clienteId;
+    if (patch.clienteNome !== undefined) dbPatch.cliente_nome = patch.clienteNome;
+    if (patch.data !== undefined) dbPatch.data = patch.data;
+    if (patch.horaInicio !== undefined) dbPatch.hora_inicio = patch.horaInicio;
+    if (patch.horaFim !== undefined) dbPatch.hora_fim = patch.horaFim;
+    if (patch.tipo !== undefined) dbPatch.tipo = patch.tipo;
+    if (patch.status !== undefined) dbPatch.status = patch.status;
+    if (patch.observacoes !== undefined) dbPatch.observacoes = patch.observacoes;
+    if (patch.valor !== undefined) dbPatch.valor = patch.valor;
+    if (patch.pacoteId !== undefined) dbPatch.pacote_id = patch.pacoteId;
+    if (patch.convidados !== undefined) dbPatch.convidados = patch.convidados;
+    if (patch.decoracao !== undefined) dbPatch.decoracao = patch.decoracao;
+    if (patch.equipeId !== undefined) dbPatch.equipe_id = patch.equipeId;
+    if (patch.valorEntrada !== undefined) dbPatch.valor_entrada = patch.valorEntrada;
+    if (patch.formaPagamento !== undefined) dbPatch.forma_pagamento = patch.formaPagamento;
+
     const { data, error } = await supabase
       .from("eventos")
-      .update(patch)
+      .update(dbPatch)
       .eq("id", id)
       .eq("user_id", userId)
       .select()
@@ -373,7 +457,38 @@ export async function updateEventoApi(
       console.error("Erro ao atualizar evento:", error);
       return null;
     }
-    return data as Evento;
+
+    // Se houver aniversariantes no patch, atualizar tabela evento_aniversariantes
+    if (patch.aniversariantes) {
+      // Deletar aniversariantes antigos
+      await supabase
+        .from("evento_aniversariantes")
+        .delete()
+        .eq("evento_id", id)
+        .eq("user_id", userId);
+
+      // Inserir novos aniversariantes
+      if (patch.aniversariantes.length > 0) {
+        const { error: anivError } = await supabase
+          .from("evento_aniversariantes")
+          .insert(
+            patch.aniversariantes.map((a) => ({
+              user_id: userId,
+              evento_id: id,
+              nome: a.nome,
+              idade: a.idade,
+            }))
+          );
+        if (anivError) {
+          console.error("Erro ao atualizar aniversariantes:", anivError);
+        }
+      }
+    }
+
+    return {
+      ...data,
+      aniversariantes: patch.aniversariantes || [],
+    } as Evento;
   } catch (err) {
     console.error("updateEventoApi - erro de autenticação:", err);
     return null;

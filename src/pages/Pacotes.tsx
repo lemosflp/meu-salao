@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit } from "lucide-react";
+import { Plus, Edit, Package, Gift, Users } from "lucide-react";
 import { usePacotesContext } from "@/contexts/PacotesContext";
 import { useAdicionaisContext } from "@/contexts/AdicionaisContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -51,6 +51,78 @@ export default function Pacotes() {
   >([]);
   const [profissionalNome, setProfissionalNome] = useState("");
   const [profissionalQuantidade, setProfissionalQuantidade] = useState("");
+
+  // Definir selectedPacote, selectedAdicional, selectedEquipe ANTES dos useEffect
+  const selectedPacote = selectedPacoteId
+    ? pacotes.find(p => p.id === selectedPacoteId) ?? null
+    : null;
+
+  const selectedAdicional = selectedAdicionalId
+    ? adicionais.find(a => a.id === selectedAdicionalId) ?? null
+    : null;
+
+  const selectedEquipe = selectedEquipeId
+    ? equipes.find(e => e.id === selectedEquipeId) ?? null
+    : null;
+
+  // REFS para auto-scroll
+  const formPacoteRef = useRef<HTMLDivElement>(null);
+  const formAdicionalRef = useRef<HTMLDivElement>(null);
+  const formEquipeRef = useRef<HTMLDivElement>(null);
+  const detailPacoteRef = useRef<HTMLDivElement>(null);
+  const detailAdicionalRef = useRef<HTMLDivElement>(null);
+  const detailEquipeRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll Pacotes
+  useEffect(() => {
+    if (showForm && formPacoteRef.current) {
+      setTimeout(() => {
+        formPacoteRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [showForm]);
+
+  useEffect(() => {
+    if (selectedPacote && detailPacoteRef.current) {
+      setTimeout(() => {
+        detailPacoteRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [selectedPacote]);
+
+  // Auto-scroll Adicionais
+  useEffect(() => {
+    if (showAdicionalForm && formAdicionalRef.current) {
+      setTimeout(() => {
+        formAdicionalRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [showAdicionalForm]);
+
+  useEffect(() => {
+    if (selectedAdicional && detailAdicionalRef.current) {
+      setTimeout(() => {
+        detailAdicionalRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [selectedAdicional]);
+
+  // Auto-scroll Equipes
+  useEffect(() => {
+    if (showEquipeForm && formEquipeRef.current) {
+      setTimeout(() => {
+        formEquipeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [showEquipeForm]);
+
+  useEffect(() => {
+    if (selectedEquipe && detailEquipeRef.current) {
+      setTimeout(() => {
+        detailEquipeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [selectedEquipe]);
 
   // HANDLERS PACOTES
   const handlePacoteChange = (
@@ -110,6 +182,7 @@ export default function Pacotes() {
     });
     setEditingPacoteId(id);
     setShowForm(true);
+    setSelectedPacoteId(null); // ← Fechar detalhes
   };
 
   const handleCancelEditPacote = () => {
@@ -117,10 +190,6 @@ export default function Pacotes() {
     resetPacoteForm();
     setShowForm(false);
   };
-
-  const selectedPacote = selectedPacoteId
-    ? pacotes.find(p => p.id === selectedPacoteId) ?? null
-    : null;
 
   // HANDLERS ADICIONAIS
   const handleAdicionalChange = (
@@ -194,6 +263,7 @@ export default function Pacotes() {
     });
     setEditingAdicionalId(id);
     setShowAdicionalForm(true);
+    setSelectedAdicionalId(null); // ← Fechar detalhes
   };
 
   const handleCancelEditAdicional = () => {
@@ -201,10 +271,6 @@ export default function Pacotes() {
     resetAdicionalForm();
     setShowAdicionalForm(false);
   };
-
-  const selectedAdicional = selectedAdicionalId
-    ? adicionais.find(a => a.id === selectedAdicionalId) ?? null
-    : null;
 
   // HANDLERS EQUIPES
   const resetEquipeForm = () => {
@@ -269,6 +335,7 @@ export default function Pacotes() {
     );
     setEditingEquipeId(id);
     setShowEquipeForm(true);
+    setSelectedEquipeId(null); // ← Fechar detalhes
   };
 
   const handleCancelEditEquipe = () => {
@@ -277,418 +344,408 @@ export default function Pacotes() {
     setShowEquipeForm(false);
   };
 
-  const selectedEquipe = selectedEquipeId
-    ? equipes.find(e => e.id === selectedEquipeId) ?? null
-    : null;
-
   // helper para somar profissionais de uma equipe
   const getTotalProfissionais = (equipe: { profissionais: { quantidade: number }[] }) =>
     equipe.profissionais.reduce((sum, p) => sum + p.quantidade, 0);
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Propostas, Adicionais e Equipes</h1>
-          <p className="text-muted-foreground">
-            Cadastrar e gerenciar propostas, adicionais e equipes de eventos
-          </p>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-foreground">Propostas, Adicionais e Equipes</h1>
+        <p className="text-muted-foreground mt-2">
+          Gerencie todos os componentes para seus eventos
+        </p>
+      </div>
 
-        <div className="flex gap-2">
-          {/* Botão Cadastrar Equipe (à esquerda) */}
-          <Button
-            className="bg-primary hover:bg-primary-hover text-primary-foreground px-8"
-            onClick={() => {
-              if (showEquipeForm && !editingEquipeId) {
-                resetEquipeForm();
-              }
-              setShowEquipeForm(prev => !prev);
-            }}
-          >
-            <Plus size={16} className="mr-2" />
-            {showEquipeForm ? "Cancelar" : editingEquipeId ? "Cadastrar Equipe" : "Cadastrar Equipe"}
-          </Button>
+      {/* Botões de ação */}
+      <div className="flex flex-wrap gap-3 mb-8">
+        {/* Botão Equipes */}
+        <Button
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 flex items-center gap-2"
+          onClick={() => {
+            if (showEquipeForm && !editingEquipeId) {
+              resetEquipeForm();
+            }
+            setShowEquipeForm(prev => !prev);
+          }}
+        >
+          <Users size={18} />
+          {showEquipeForm ? "Cancelar" : "Cadastrar Equipe"}
+        </Button>
 
-          {/* Botão Cadastrar Adicional (à esquerda) */}
-          <Button
-            className="bg-primary hover:bg-primary-hover text-primary-foreground px-8"
-            onClick={() => {
-              if (showAdicionalForm && !editingAdicionalId) {
-                resetAdicionalForm();
-              }
-              setShowAdicionalForm(prev => !prev);
-            }}
-          >
-            <Plus size={16} className="mr-2" />
-            {showAdicionalForm ? "Cancelar" : editingAdicionalId ? "Editar Adicional" : "Cadastrar Adicional"}
-          </Button>
+        {/* Botão Adicionais */}
+        <Button
+          className="bg-blue-500 hover:bg-blue-600 text-white px-6 flex items-center gap-2"
+          onClick={() => {
+            if (showAdicionalForm && !editingAdicionalId) {
+              resetAdicionalForm();
+            }
+            setShowAdicionalForm(prev => !prev);
+          }}
+        >
+          <Gift size={18} />
+          {showAdicionalForm ? "Cancelar" : "Cadastrar Adicional"}
+        </Button>
 
-          {/* Botão Cadastrar Pacote */}
-          <Button
-            className="bg-primary hover:bg-primary-hover text-primary-foreground px-8"
-            onClick={() => {
-              if (showForm && !editingPacoteId) {
-                resetPacoteForm();
-              }
-              setShowForm(prev => !prev);
-            }}
-          >
-            <Plus size={16} className="mr-2" />
-            {showForm ? "Cancelar" : editingPacoteId ? "Editar Proposta" : "Cadastrar Proposta"}
-          </Button>
-        </div>
+        {/* Botão Pacotes */}
+        <Button
+          className="bg-blue-700 hover:bg-blue-800 text-white px-6 flex items-center gap-2"
+          onClick={() => {
+            if (showForm && !editingPacoteId) {
+              resetPacoteForm();
+            }
+            setShowForm(prev => !prev);
+          }}
+        >
+          <Package size={18} />
+          {showForm ? "Cancelar" : "Cadastrar Proposta"}
+        </Button>
       </div>
 
       {/* FORMULÁRIO EQUIPES */}
       {showEquipeForm && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>
-              {editingEquipeId ? "Editar Equipe" : "Cadastrar Equipe"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmitEquipe} className="space-y-4">
-              {/* Nome da equipe */}
-              <Input
-                name="nomeEquipe"
-                value={equipeNome}
-                onChange={e => setEquipeNome(e.target.value)}
-                placeholder="Nome da equipe"
-                required
-              />
+        <div ref={formEquipeRef}>
+          <Card className="mb-8 border-l-4 border-l-blue-600 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+              <CardTitle className="flex items-center gap-2 text-blue-900">
+                <Users size={20} />
+                {editingEquipeId ? "Editar Equipe" : "Cadastrar Nova Equipe"}
+              </CardTitle>
+              <p className="text-xs text-blue-700 mt-1">Gerencie os profissionais da sua equipe</p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <form onSubmit={handleSubmitEquipe} className="space-y-4">
+                <Input
+                  name="nomeEquipe"
+                  value={equipeNome}
+                  onChange={e => setEquipeNome(e.target.value)}
+                  placeholder="Ex: Equipe de Decoração Premium"
+                  required
+                  className="text-base"
+                />
 
-              {/* Adicionar profissional à equipe */}
-              <div className="space-y-2">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                  <Input
-                    name="profissionalNome"
-                    value={profissionalNome}
-                    onChange={e => setProfissionalNome(e.target.value)}
-                    placeholder="Nome do profissional"
-                  />
-                  <Input
-                    name="profissionalQuantidade"
-                    type="number"
-                    min={1}
-                    value={profissionalQuantidade}
-                    onChange={e => setProfissionalQuantidade(e.target.value)}
-                    placeholder="Quantidade"
-                  />
-                  <Button
-                    type="button"
-                    // antes: variant="outline"
-                    className="w-full md:w-auto border border-primary/20 bg-muted text-foreground hover:bg-primary/10 hover:border-primary/40"
-                    onClick={handleAddProfissional}
-                  >
-                    Adicionar profissional
-                  </Button>
+                <div className="space-y-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <label className="text-sm font-semibold text-blue-900">Adicionar Profissionais</label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                    <Input
+                      name="profissionalNome"
+                      value={profissionalNome}
+                      onChange={e => setProfissionalNome(e.target.value)}
+                      placeholder="Nome do profissional"
+                    />
+                    <Input
+                      name="profissionalQuantidade"
+                      type="number"
+                      min={1}
+                      value={profissionalQuantidade}
+                      onChange={e => setProfissionalQuantidade(e.target.value)}
+                      placeholder="Quantidade"
+                    />
+                    <Button
+                      type="button"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={handleAddProfissional}
+                    >
+                      Adicionar
+                    </Button>
+                  </div>
+
+                  {profissionais.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <label className="text-xs font-semibold text-blue-700 uppercase">Profissionais Adicionados</label>
+                      {profissionais.map(p => (
+                        <div
+                          key={p.id}
+                          className="flex justify-between items-center bg-white border border-blue-300 rounded px-3 py-2 hover:shadow-sm transition"
+                        >
+                          <div>
+                            <span className="font-medium text-slate-700">{p.nome}</span>
+                            <span className="text-slate-500 ml-2">({p.quantidade})</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="text-red-600 hover:text-red-700 font-medium text-sm"
+                            onClick={() => handleRemoveProfissional(p.id)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* Lista de profissionais adicionados à equipe */}
-                {profissionais.length > 0 && (
-                  <div className="mt-2 space-y-2">
-                    {profissionais.map(p => (
-                      <div
-                        key={p.id}
-                        className="flex justify-between items-center text-sm border rounded px-3 py-2"
-                      >
-                        <div>
-                          <span className="font-medium">{p.nome}</span>{" "}
-                          <span className="text-muted-foreground">
-                            ({p.quantidade})
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          className="text-red-600 hover:underline text-xs"
-                          onClick={() => handleRemoveProfissional(p.id)}
-                        >
-                          Remover
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-3 flex gap-2">
-                <Button type="submit" className="bg-primary text-primary-foreground">
-                  {editingEquipeId ? "Salvar alterações" : "Salvar equipe"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancelEditEquipe}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+                <div className="flex gap-2 pt-4">
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white flex-1">
+                    {editingEquipeId ? "Salvar Alterações" : "Salvar Equipe"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleCancelEditEquipe}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* FORMULÁRIO ADICIONAIS */}
       {showAdicionalForm && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>
-              {editingAdicionalId ? "Editar Adicional" : "Cadastrar Adicional"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmitAdicional} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Input
-                  name="nome"
-                  value={adicionalForm.nome}
-                  onChange={handleAdicionalChange}
-                  placeholder="Nome do adicional"
-                  className="md:col-span-2"
-                  required
-                />
-
-                {/* Modelo */}
-                <Select
-                  value={adicionalForm.modelo}
-                  onValueChange={handleAdicionalModeloChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o modelo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="valor_pessoa">Valor por pessoa</SelectItem>
-                    <SelectItem value="valor_unidade">Valor por unidade</SelectItem>
-                    <SelectItem value="valor_festa">Valor por festa</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Valor + Duração */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Input
-                  name="valor"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={adicionalForm.valor}
-                  onChange={handleAdicionalChange}
-                  placeholder="Valor (R$)"
-                />
-                <Input
-                  name="duracaoHoras"
-                  type="number"
-                  min={0}
-                  value={adicionalForm.duracaoHoras}
-                  onChange={handleAdicionalChange}
-                  placeholder="Duração (horas)"
-                />
-              </div>
-
-              {/* Descrição */}
-              <Textarea
-                name="descricao"
-                value={adicionalForm.descricao}
-                onChange={handleAdicionalChange}
-                placeholder="Descrição (opcional)"
-              />
-
-              {/* Observação (checkbox) */}
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="observacao"
-                    checked={adicionalForm.observacao}
-                    onCheckedChange={checked =>
-                      handleAdicionalObservacaoChange(Boolean(checked))
-                    }
+        <div ref={formAdicionalRef}>
+          <Card className="mb-8 border-l-4 border-l-blue-500 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-200">
+              <CardTitle className="flex items-center gap-2 text-blue-800">
+                <Gift size={20} />
+                {editingAdicionalId ? "Editar Adicional" : "Cadastrar Novo Adicional"}
+              </CardTitle>
+              <p className="text-xs text-blue-600 mt-1">Adicione serviços extras aos seus eventos</p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <form onSubmit={handleSubmitAdicional} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Input
+                    name="nome"
+                    value={adicionalForm.nome}
+                    onChange={handleAdicionalChange}
+                    placeholder="Ex: Fotografia Profissional"
+                    className="md:col-span-2"
+                    required
                   />
-                  <label
-                    htmlFor="observacao"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  <Select
+                    value={adicionalForm.modelo}
+                    onValueChange={handleAdicionalModeloChange}
                   >
-                    Observação
+                    <SelectTrigger>
+                      <SelectValue placeholder="Modelo de precificação" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="valor_pessoa">💰 Valor por pessoa</SelectItem>
+                      <SelectItem value="valor_unidade">📦 Valor por unidade</SelectItem>
+                      <SelectItem value="valor_festa">🎉 Valor por festa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Input
+                    name="valor"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={adicionalForm.valor}
+                    onChange={handleAdicionalChange}
+                    placeholder="Valor (R$)"
+                  />
+                  <Input
+                    name="duracaoHoras"
+                    type="number"
+                    min={0}
+                    value={adicionalForm.duracaoHoras}
+                    onChange={handleAdicionalChange}
+                    placeholder="Duração (horas)"
+                  />
+                </div>
+
+                <Textarea
+                  name="descricao"
+                  value={adicionalForm.descricao}
+                  onChange={handleAdicionalChange}
+                  placeholder="Descrição detalhada (opcional)"
+                  rows={3}
+                />
+
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      id="observacao"
+                      checked={adicionalForm.observacao}
+                      onCheckedChange={checked =>
+                        handleAdicionalObservacaoChange(Boolean(checked))
+                      }
+                    />
+                    <span className="text-sm font-medium text-blue-900">
+                      Permitir observações do cliente para este adicional
+                    </span>
                   </label>
                 </div>
 
-                <div className="text-xs text-muted-foreground bg-muted/60 border border-muted rounded px-3 py-2">
-                  Este campo habilita uma observação para este adicional.
+                <div className="flex gap-2 pt-4">
+                  <Button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white flex-1">
+                    {editingAdicionalId ? "Salvar Alterações" : "Salvar Adicional"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleCancelEditAdicional}
+                  >
+                    Cancelar
+                  </Button>
                 </div>
-              </div>
-
-              <div className="mt-3 flex gap-2">
-                <Button type="submit" className="bg-primary text-primary-foreground">
-                  {editingAdicionalId ? "Salvar alterações" : "Salvar adicional"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancelEditAdicional}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* FORMULÁRIO PACOTES */}
       {showForm && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>
-              {editingPacoteId ? "Editar Proposta" : "Cadastrar Proposta"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmitPacote} className="space-y-4">
-              {/* Nome + Duração */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Input
-                  name="nome"
-                  value={pacoteForm.nome}
-                  onChange={handlePacoteChange}
-                  placeholder="Nome da proposta"
-                  className="md:col-span-2"
-                  required
-                />
-                <Input
-                  name="duracaoHoras"
-                  type="number"
-                  min={1}
-                  value={pacoteForm.duracaoHoras}
-                  onChange={handlePacoteChange}
-                  placeholder="Duração (horas)"
-                />
-              </div>
+        <div ref={formPacoteRef}>
+          <Card className="mb-8 border-l-4 border-l-blue-700 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-blue-100 to-blue-50 border-b border-blue-300">
+              <CardTitle className="flex items-center gap-2 text-blue-950">
+                <Package size={20} />
+                {editingPacoteId ? "Editar Proposta" : "Cadastrar Nova Proposta"}
+              </CardTitle>
+              <p className="text-xs text-blue-800 mt-1">Configure o pacote base para seus eventos</p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <form onSubmit={handleSubmitPacote} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Input
+                    name="nome"
+                    value={pacoteForm.nome}
+                    onChange={handlePacoteChange}
+                    placeholder="Ex: Pacote Premium"
+                    className="md:col-span-2"
+                    required
+                  />
+                  <Input
+                    name="duracaoHoras"
+                    type="number"
+                    min={1}
+                    value={pacoteForm.duracaoHoras}
+                    onChange={handlePacoteChange}
+                    placeholder="Duração (h)"
+                  />
+                </div>
 
-              {/* Convidados base / Valor base / Valor por pessoa */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Input
-                  name="convidadosBase"
-                  type="number"
-                  min={0}
-                  value={pacoteForm.convidadosBase}
-                  onChange={handlePacoteChange}
-                  placeholder="Convidados base (ex: 40)"
-                />
-                <Input
-                  name="valorBase"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={pacoteForm.valorBase}
-                  onChange={handlePacoteChange}
-                  placeholder="Valor base (R$)"
-                />
-                <Input
-                  name="valorPorPessoa"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={pacoteForm.valorPorPessoa}
-                  onChange={handlePacoteChange}
-                  placeholder="Valor por pessoa (R$)"
-                />
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-blue-100 p-4 rounded-lg border border-blue-300">
+                  <div>
+                    <label className="text-xs font-semibold text-blue-900">Convidados Base</label>
+                    <Input
+                      name="convidadosBase"
+                      type="number"
+                      min={0}
+                      value={pacoteForm.convidadosBase}
+                      onChange={handlePacoteChange}
+                      placeholder="Ex: 40"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-blue-900">Valor Base (R$)</label>
+                    <Input
+                      name="valorBase"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={pacoteForm.valorBase}
+                      onChange={handlePacoteChange}
+                      placeholder="0.00"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-blue-900">Valor/Pessoa (R$)</label>
+                    <Input
+                      name="valorPorPessoa"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={pacoteForm.valorPorPessoa}
+                      onChange={handlePacoteChange}
+                      placeholder="0.00"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
 
-              {/* Descrição */}
-              <Textarea
-                name="descricao"
-                value={pacoteForm.descricao}
-                onChange={handlePacoteChange}
-                placeholder="Descrição (opcional)"
-              />
+                <Textarea
+                  name="descricao"
+                  value={pacoteForm.descricao}
+                  onChange={handlePacoteChange}
+                  placeholder="Descrição completa da proposta (opcional)"
+                  rows={3}
+                />
 
-              <div className="mt-3 flex gap-2">
-                <Button type="submit" className="bg-primary text-primary-foreground">
-                  {editingPacoteId ? "Salvar alterações" : "Salvar proposta"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancelEditPacote}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+                <div className="flex gap-2 pt-4">
+                  <Button type="submit" className="bg-blue-700 hover:bg-blue-800 text-white flex-1">
+                    {editingPacoteId ? "Salvar Alterações" : "Salvar Proposta"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleCancelEditPacote}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* LISTA DE PACOTES */}
-      <section className="mt-6 mb-6">
-        <Card className="bg-muted/40">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Propostas cadastradas</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Visualize e gerencie todas as propostas disponíveis.
-            </p>
-          </CardHeader>
-          <CardContent>
+      <section className="mb-12">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-2 bg-blue-700 rounded-lg">
+            <Package size={24} className="text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-foreground">Propostas</h2>
+          <span className="ml-auto text-sm text-muted-foreground">{pacotes.length} proposta(s)</span>
+        </div>
+        <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-200">
+          <CardContent className="pt-6">
             {pacotes.length === 0 ? (
-              <div className="p-6 text-sm text-muted-foreground border border-dashed rounded-md">
-                Nenhuma proposta cadastrada ainda.
+              <div className="text-center py-12">
+                <Package size={48} className="mx-auto text-blue-200 mb-3" />
+                <p className="text-muted-foreground">Nenhuma proposta cadastrada</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {pacotes.map(p => (
                   <Card
                     key={p.id}
-                    className="hover:shadow-md transition-shadow"
+                    className="bg-white border-blue-200 hover:shadow-lg transition cursor-pointer hover:border-blue-400"
+                    onClick={() => setSelectedPacoteId(p.id)}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          {/* Título */}
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-base">
-                              {p.nome}
-                            </h4>
-                          </div>
-
-                          {/* Infos principais (resumo) */}
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-muted-foreground">
-                            <div>
-                              <span className="font-medium text-foreground">
-                                Duração:
-                              </span>{" "}
-                              {p.duracaoHoras}h
-                            </div>
-                            <div>
-                              <span className="font-medium text-foreground">
-                                Convidados base:
-                              </span>{" "}
-                              {p.convidadosBase}
-                            </div>
-                            <div>
-                              <span className="font-medium text-foreground">
-                                Valor base:
-                              </span>{" "}
-                              R{"$ "}
-                              {p.valorBase.toLocaleString("pt-BR", {
-                                minimumFractionDigits: 2,
-                              })}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Ações: igual clientes */}
-                        <div className="flex items-start ml-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedPacoteId(p.id)}
-                          >
-                            <Edit size={16} />
-                          </Button>
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <h4 className="font-bold text-base text-blue-800 flex-1">{p.nome}</h4>
+                        <div className="bg-blue-100 px-2 py-1 rounded text-xs text-blue-700 font-medium">
+                          {p.duracaoHoras}h
                         </div>
                       </div>
+                      <div className="space-y-2 text-sm text-slate-600">
+                        <div className="flex justify-between">
+                          <span>👥 Convidados:</span>
+                          <span className="font-medium">{p.convidadosBase}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>💰 Valor Base:</span>
+                          <span className="font-medium">R$ {p.valorBase.toLocaleString('pt-BR')}</span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full mt-3 text-blue-700 hover:bg-blue-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPacoteId(p.id);
+                        }}
+                      >
+                        <Edit size={16} className="mr-2" /> Ver Detalhes
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}
@@ -698,165 +755,58 @@ export default function Pacotes() {
         </Card>
       </section>
 
-      {/* DETALHE DO PACOTE SELECIONADO */}
-      {selectedPacote && (
-        <section className="mt-6">
-          <Card className="border border-slate-200 shadow-sm">
-            <CardHeader className="border-b bg-slate-50/80">
-              <CardTitle className="text-xl">{selectedPacote.nome}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="rounded-lg border bg-slate-50/60 p-3 space-y-1">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Estrutura da proposta
-                  </h3>
-                  <div>
-                    <span className="font-medium text-foreground">Duração: </span>
-                    {selectedPacote.duracaoHoras}h
-                  </div>
-                  <div>
-                    <span className="font-medium text-foreground">Convidados base: </span>
-                    {selectedPacote.convidadosBase}
-                  </div>
-                </div>
-                <div className="rounded-lg border bg-slate-50/60 p-3 space-y-1">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Valores
-                  </h3>
-                  <div>
-                    <span className="font-medium text-foreground">Valor base: </span>
-                    R$ {selectedPacote.valorBase.toLocaleString("pt-BR", {
-                      minimumFractionDigits: 2,
-                    })}
-                  </div>
-                  <div>
-                    <span className="font-medium text-foreground">Valor por pessoa: </span>
-                    R$ {selectedPacote.valorPorPessoa.toLocaleString("pt-BR", {
-                      minimumFractionDigits: 2,
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {selectedPacote.descricao && (
-                <div className="rounded-lg border bg-slate-50/60 p-3">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
-                    Descrição
-                  </h3>
-                  <p className="text-sm whitespace-pre-line">
-                    {selectedPacote.descricao}
-                  </p>
-                </div>
-              )}
-
-              <div className="mt-3 flex flex-wrap gap-2 justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setSelectedPacoteId(null)}
-                >
-                  Voltar
-                </Button>
-
-                <Button
-                  type="button"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => {
-                    handleEditPacote(selectedPacote.id);
-                  }}
-                >
-                  Editar
-                </Button>
-
-                <Button
-                  type="button"
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                  onClick={() => {
-                    removePacote(selectedPacote.id);
-                    setSelectedPacoteId(null);
-                  }}
-                >
-                  Remover
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-      )}
-
       {/* LISTA DE ADICIONAIS */}
-      <section className="mt-6 mb-6">
-        <Card className="bg-muted/40">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Adicionais cadastrados</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Serviços extras que podem ser adicionados aos eventos.
-            </p>
-          </CardHeader>
-          <CardContent>
+      <section className="mb-12">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-2 bg-blue-500 rounded-lg">
+            <Gift size={24} className="text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-foreground">Adicionais</h2>
+          <span className="ml-auto text-sm text-muted-foreground">{adicionais.length} adicional(is)</span>
+        </div>
+        <Card className="bg-gradient-to-br from-cyan-50 to-white border-blue-200">
+          <CardContent className="pt-6">
             {adicionais.length === 0 ? (
-              <div className="p-6 text-sm text-muted-foreground border border-dashed rounded-md">
-                Nenhum adicional cadastrado ainda.
+              <div className="text-center py-12">
+                <Gift size={48} className="mx-auto text-blue-200 mb-3" />
+                <p className="text-muted-foreground">Nenhum adicional cadastrado</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {adicionais.map(a => (
                   <Card
                     key={a.id}
-                    className="hover:shadow-md transition-shadow"
+                    className="bg-white border-blue-200 hover:shadow-lg transition cursor-pointer hover:border-blue-400"
+                    onClick={() => setSelectedAdicionalId(a.id)}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          {/* Título */}
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-base">
-                              {a.nome}
-                            </h4>
-                          </div>
-
-                          {/* Infos principais (resumo) */}
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-muted-foreground">
-                            <div>
-                              <span className="font-medium text-foreground">
-                                Modelo:
-                              </span>{" "}
-                              {a.modelo === "valor_pessoa"
-                                ? "Valor por pessoa"
-                                : a.modelo === "valor_unidade"
-                                ? "Valor por unidade"
-                                : "Valor por festa"}
-                            </div>
-                            <div>
-                              <span className="font-medium text-foreground">
-                                Valor:
-                              </span>{" "}
-                              R{"$ "}
-                              {a.valor.toLocaleString("pt-BR", {
-                                minimumFractionDigits: 2,
-                              })}
-                            </div>
-                            <div>
-                              <span className="font-medium text-foreground">
-                                Duração:
-                              </span>{" "}
-                              {a.duracaoHoras}h
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Ações: igual clientes (ícone Edit que abre detalhes) */}
-                        <div className="flex items-start ml-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedAdicionalId(a.id)}
-                          >
-                            <Edit size={16} />
-                          </Button>
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <h4 className="font-bold text-base text-blue-700 flex-1">{a.nome}</h4>
+                        <div className="bg-blue-50 px-2 py-1 rounded text-xs text-blue-600 font-medium border border-blue-200">
+                          {a.modelo === "valor_pessoa" ? "Pessoa" : a.modelo === "valor_unidade" ? "Unidade" : "Festa"}
                         </div>
                       </div>
+                      <div className="space-y-2 text-sm text-slate-600">
+                        <div className="flex justify-between">
+                          <span>💰 Valor:</span>
+                          <span className="font-medium">R$ {a.valor.toLocaleString('pt-BR')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>⏱️ Duração:</span>
+                          <span className="font-medium">{a.duracaoHoras}h</span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full mt-3 text-blue-600 hover:bg-blue-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAdicionalId(a.id);
+                        }}
+                      >
+                        <Edit size={16} className="mr-2" /> Ver Detalhes
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}
@@ -866,149 +816,65 @@ export default function Pacotes() {
         </Card>
       </section>
 
-      {/* DETALHE DO ADICIONAL SELECIONADO */}
-      {selectedAdicional && (
-        <section className="mt-6">
-          <Card className="border border-slate-200 shadow-sm">
-            <CardHeader className="border-b bg-slate-50/80">
-              <CardTitle>{selectedAdicional.nome}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="rounded-lg border bg-slate-50/60 p-3 space-y-1">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Modelo
-                  </h3>
-                  <div>
-                    {selectedAdicional.modelo === "valor_pessoa"
-                      ? "Valor por pessoa"
-                      : selectedAdicional.modelo === "valor_unidade"
-                      ? "Valor por unidade"
-                      : "Valor por festa"}
-                  </div>
-                </div>
-                <div className="rounded-lg border bg-slate-50/60 p-3 space-y-1">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Valor e duração
-                  </h3>
-                  <div>
-                    <span className="font-medium text-foreground">Valor: </span>
-                    R$ {selectedAdicional.valor.toLocaleString("pt-BR", {
-                      minimumFractionDigits: 2,
-                    })}
-                  </div>
-                  <div>
-                    <span className="font-medium text-foreground">Duração: </span>
-                    {selectedAdicional.duracaoHoras}h
-                  </div>
-                </div>
-              </div>
-
-              {selectedAdicional.descricao && (
-                <div className="rounded-lg border bg-slate-50/60 p-3">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
-                    Descrição
-                  </h3>
-                  <p className="text-sm whitespace-pre-line">
-                    {selectedAdicional.descricao}
-                  </p>
-                </div>
-              )}
-              {selectedAdicional.observacao && (
-                <div className="rounded-lg border bg-slate-50/60 p-3 text-xs text-muted-foreground">
-                  Observação habilitada para este adicional.
-                </div>
-              )}
-
-              <div className="mt-3 flex flex-wrap gap-2 justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setSelectedAdicionalId(null)}
-                >
-                  Voltar
-                </Button>
-
-                <Button
-                  type="button"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => {
-                    handleEditAdicional(selectedAdicional.id);
-                  }}
-                >
-                  Editar
-                </Button>
-
-                <Button
-                  type="button"
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                  onClick={() => {
-                    removeAdicional(selectedAdicional.id);
-                    setSelectedAdicionalId(null);
-                  }}
-                >
-                  Remover
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-      )}
-
       {/* LISTA DE EQUIPES */}
-      <section className="mt-6 mb-6">
-        <Card className="bg-muted/40">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Equipes cadastradas</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Agrupamentos de profissionais para os eventos.
-            </p>
-          </CardHeader>
-          <CardContent>
+      <section className="mb-12">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-2 bg-blue-600 rounded-lg">
+            <Users size={24} className="text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-foreground">Equipes</h2>
+          <span className="ml-auto text-sm text-muted-foreground">{equipes.length} equipe(s)</span>
+        </div>
+        <Card className="bg-gradient-to-br from-blue-100 to-white border-blue-300">
+          <CardContent className="pt-6">
             {equipes.length === 0 ? (
-              <div className="p-6 text-sm text-muted-foreground border border-dashed rounded-md">
-                Nenhuma equipe cadastrada ainda.
+              <div className="text-center py-12">
+                <Users size={48} className="mx-auto text-blue-200 mb-3" />
+                <p className="text-muted-foreground">Nenhuma equipe cadastrada</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {equipes.map(equipe => (
                   <Card
                     key={equipe.id}
-                    className="hover:shadow-md transition-shadow"
+                    className="bg-white border-blue-300 hover:shadow-lg transition cursor-pointer hover:border-blue-500"
+                    onClick={() => setSelectedEquipeId(equipe.id)}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          {/* Título */}
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-base">
-                              {equipe.nome}
-                            </h4>
-                          </div>
-
-                          {/* Resumo profissionais */}
-                          <div className="text-sm text-muted-foreground">
-                            {equipe.profissionais.length === 0 ? (
-                              <span>Nenhum profissional adicionado.</span>
-                            ) : (
-                              <span>
-                                {getTotalProfissionais(equipe)} profissional(is) na equipe
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Ações: ícone Edit que abre detalhes */}
-                        <div className="flex items-start ml-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedEquipeId(equipe.id)}
-                          >
-                            <Edit size={16} />
-                          </Button>
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <h4 className="font-bold text-base text-blue-900 flex-1">{equipe.nome}</h4>
+                        <div className="bg-blue-200 px-2 py-1 rounded text-xs text-blue-800 font-semibold">
+                          {getTotalProfissionais(equipe)}
                         </div>
                       </div>
+                      <div className="space-y-2 text-sm text-slate-600">
+                        {equipe.profissionais.length > 0 && (
+                          <div className="mt-2 text-xs space-y-1">
+                            {equipe.profissionais.slice(0, 2).map(p => (
+                              <div key={p.id} className="flex justify-between text-slate-500">
+                                <span>• {p.nome}</span>
+                                <span>({p.quantidade})</span>
+                              </div>
+                            ))}
+                            {equipe.profissionais.length > 2 && (
+                              <div className="text-slate-400 italic">
+                                +{equipe.profissionais.length - 2} mais...
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full mt-3 text-blue-800 hover:bg-blue-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedEquipeId(equipe.id);
+                        }}
+                      >
+                        <Edit size={16} className="mr-2" /> Ver Detalhes
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}
@@ -1018,72 +884,277 @@ export default function Pacotes() {
         </Card>
       </section>
 
-      {/* DETALHE DA EQUIPE SELECIONADA */}
-      {selectedEquipe && (
-        <section className="mt-6">
-          <Card className="border border-slate-200 shadow-sm">
-            <CardHeader className="border-b bg-slate-50/80">
-              <CardTitle>{selectedEquipe.nome}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm pt-4">
-              <div className="rounded-lg border bg-slate-50/60 p-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
-                  Profissionais
-                </h3>
-                {selectedEquipe.profissionais.length === 0 ? (
-                  <div className="text-muted-foreground text-sm">
-                    Nenhum profissional cadastrado para esta equipe.
+      {/* DETALHES */}
+      {selectedPacote && (
+        <div ref={detailPacoteRef}>
+          <section className="mt-6">
+            <Card className="border-l-4 border-l-blue-700 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-white border-b border-blue-200">
+                <CardTitle className="text-2xl text-blue-900">{selectedPacote.nome}</CardTitle>
+                <p className="text-xs text-blue-600 mt-1">Detalhes da proposta</p>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-blue-800 flex items-center gap-2">
+                      <Package size={16} className="text-blue-600" />
+                      Estrutura da proposta
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600">Duração:</span>
+                        <span className="font-semibold text-blue-700">{selectedPacote.duracaoHoras}h</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600">Convidados base:</span>
+                        <span className="font-semibold text-blue-700">{selectedPacote.convidadosBase}</span>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <ul className="divide-y rounded-md border bg-white/80">
-                    {selectedEquipe.profissionais.map((p) => (
-                      <li
-                        key={p.id}
-                        className="flex items-center justify-between px-3 py-2"
-                      >
-                        <span className="font-medium">{p.nome}</span>
-                        <span className="text-xs text-muted-foreground">
-                          Quantidade: {p.quantidade}
+
+                  <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-blue-800 flex items-center gap-2">
+                      <span>💰</span>
+                      Valores
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600">Valor base:</span>
+                        <span className="font-semibold text-blue-700">
+                          R$ {selectedPacote.valorBase.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                         </span>
-                      </li>
-                    ))}
-                  </ul>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600">Valor por pessoa:</span>
+                        <span className="font-semibold text-blue-700">
+                          R$ {selectedPacote.valorPorPessoa.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedPacote.descricao && (
+                  <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-blue-800 mb-3 flex items-center gap-2">
+                      <span>📝</span>
+                      Descrição
+                    </h3>
+                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                      {selectedPacote.descricao}
+                    </p>
+                  </div>
                 )}
-              </div>
 
-              <div className="mt-3 flex flex-wrap gap-2 justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setSelectedEquipeId(null)}
-                >
-                  Voltar
-                </Button>
+                <div className="flex flex-wrap gap-2 justify-end pt-4 border-t border-blue-100">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                    onClick={() => setSelectedPacoteId(null)}
+                  >
+                    Voltar
+                  </Button>
 
-                <Button
-                  type="button"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => {
-                    handleEditEquipe(selectedEquipe.id);
-                  }}
-                >
-                  Editar
-                </Button>
+                  <Button
+                    type="button"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => {
+                      handleEditPacote(selectedPacote.id);
+                    }}
+                  >
+                    <Edit size={16} className="mr-2" />
+                    Editar
+                  </Button>
 
-                <Button
-                  type="button"
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                  onClick={() => {
-                    removeEquipe(selectedEquipe.id);
-                    setSelectedEquipeId(null);
-                  }}
-                >
-                  Remover
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
+                  <Button
+                    type="button"
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    onClick={() => {
+                      removePacote(selectedPacote.id);
+                      setSelectedPacoteId(null);
+                    }}
+                  >
+                    Remover
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        </div>
+      )}
+
+      {selectedAdicional && (
+        <div ref={detailAdicionalRef}>
+          <section className="mt-6">
+            <Card className="border-l-4 border-l-blue-500 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-cyan-50 to-white border-b border-blue-200">
+                <CardTitle className="text-2xl text-blue-800">{selectedAdicional.nome}</CardTitle>
+                <p className="text-xs text-blue-600 mt-1">Detalhes do adicional</p>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-blue-800">
+                      Modelo
+                    </h3>
+                    <div className="text-sm">
+                      <span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-medium text-xs">
+                        {selectedAdicional.modelo === "valor_pessoa"
+                          ? "💰 Valor por pessoa"
+                          : selectedAdicional.modelo === "valor_unidade"
+                          ? "📦 Valor por unidade"
+                          : "🎉 Valor por festa"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-blue-800">
+                      Valor e duração
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600">Valor:</span>
+                        <span className="font-semibold text-blue-700">
+                          R$ {selectedAdicional.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600">Duração:</span>
+                        <span className="font-semibold text-blue-700">{selectedAdicional.duracaoHoras}h</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedAdicional.descricao && (
+                  <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-blue-800 mb-3">
+                      Descrição
+                    </h3>
+                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                      {selectedAdicional.descricao}
+                    </p>
+                  </div>
+                )}
+
+                {selectedAdicional.observacao && (
+                  <div className="rounded-lg border border-blue-300 bg-blue-50 p-3 text-sm text-blue-700 flex items-center gap-2">
+                    <span>✓</span>
+                    Observação habilitada para este adicional
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2 justify-end pt-4 border-t border-blue-100">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                    onClick={() => setSelectedAdicionalId(null)}
+                  >
+                    Voltar
+                  </Button>
+
+                  <Button
+                    type="button"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => {
+                      handleEditAdicional(selectedAdicional.id);
+                    }}
+                  >
+                    <Edit size={16} className="mr-2" />
+                    Editar
+                  </Button>
+
+                  <Button
+                    type="button"
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    onClick={() => {
+                      removeAdicional(selectedAdicional.id);
+                      setSelectedAdicionalId(null);
+                    }}
+                  >
+                    Remover
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        </div>
+      )}
+
+      {selectedEquipe && (
+        <div ref={detailEquipeRef}>
+          <section className="mt-6">
+            <Card className="border-l-4 border-l-blue-600 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-100 to-white border-b border-blue-200">
+                <CardTitle className="text-2xl text-blue-900">{selectedEquipe.nome}</CardTitle>
+                <p className="text-xs text-blue-600 mt-1">Composição da equipe</p>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-6">
+                <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-blue-800 mb-4 flex items-center gap-2">
+                    <Users size={16} className="text-blue-600" />
+                    Profissionais
+                  </h3>
+                  {selectedEquipe.profissionais.length === 0 ? (
+                    <div className="text-sm text-slate-500 italic">
+                      Nenhum profissional cadastrado para esta equipe.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {selectedEquipe.profissionais.map((p) => (
+                        <div
+                          key={p.id}
+                          className="flex items-center justify-between p-3 bg-white border border-blue-100 rounded-lg hover:shadow-sm transition"
+                        >
+                          <span className="font-medium text-slate-700">{p.nome}</span>
+                          <span className="bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">
+                            {p.quantidade} {p.quantidade === 1 ? "profissional" : "profissionais"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2 justify-end pt-4 border-t border-blue-100">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                    onClick={() => setSelectedEquipeId(null)}
+                  >
+                    Voltar
+                  </Button>
+
+                  <Button
+                    type="button"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => {
+                      handleEditEquipe(selectedEquipe.id);
+                    }}
+                  >
+                    <Edit size={16} className="mr-2" />
+                    Editar
+                  </Button>
+
+                  <Button
+                    type="button"
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    onClick={() => {
+                      removeEquipe(selectedEquipe.id);
+                      setSelectedEquipeId(null);
+                    }}
+                  >
+                    Remover
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        </div>
       )}
     </div>
   );
