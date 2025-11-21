@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import type { Cliente, Evento } from "@/types";
+import type { Cliente, Evento, Pagamento } from "@/types";
 import {
   getClientesApi,
   createClienteApi,
@@ -8,6 +8,8 @@ import {
   createEventoApi,
   updateEventoApi,
   deleteEventoApi,
+  createPagamentoApi,
+  deletePagamentoApi,
 } from "@/services/supabaseApi";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -19,6 +21,8 @@ type AppContextValue = {
   addEvento: (data: Omit<Evento, "id" | "userId">) => Promise<void>;
   updateEvento: (id: string, patch: Partial<Evento>) => Promise<void>;
   removeEvento: (id: string) => Promise<void>;
+  addPagamento: (data: Omit<Pagamento, "id" | "userId" | "createdAt">) => Promise<void>;
+  removePagamento: (eventoId: string, pagamentoId: string) => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
@@ -104,6 +108,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setEventos((prev) => prev.filter((e) => e.id !== id));
   };
 
+  const addPagamento = async (data: Omit<Pagamento, "id" | "userId" | "createdAt">) => {
+    const novoPagamento = await createPagamentoApi(data);
+    if (!novoPagamento) return;
+
+    setEventos((prev) =>
+      prev.map((e) =>
+        e.id === data.eventoId
+          ? {
+              ...e,
+              pagamentos: [...(e.pagamentos || []), novoPagamento],
+            }
+          : e
+      )
+    );
+  };
+
+  const removePagamento = async (eventoId: string, pagamentoId: string) => {
+    await deletePagamentoApi(pagamentoId);
+    setEventos((prev) =>
+      prev.map((e) =>
+        e.id === eventoId
+          ? {
+              ...e,
+              pagamentos: (e.pagamentos || []).filter((p) => p.id !== pagamentoId),
+            }
+          : e
+      )
+    );
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -114,6 +148,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addEvento,
         updateEvento,
         removeEvento,
+        addPagamento,
+        removePagamento,
       }}
     >
       {children}

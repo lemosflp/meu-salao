@@ -3,10 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Plus, X, MapPin, Clock, CheckCircle2 } from "lucide-react";
 import { format, parseISO, startOfWeek, addDays, isSameDay, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAppContext } from "@/contexts/AppContext";
+import { usePacotesContext } from "@/contexts/PacotesContext";
+import { useAdicionaisContext } from "@/contexts/AdicionaisContext";
+import { useEquipesContext } from "@/contexts/EquipesContext";
 import type { Evento } from "@/types";
 
 // --- helpers de data ---
@@ -56,6 +59,11 @@ export default function Calendario() {
   const navigate = useNavigate();
   const { eventos } = useAppContext(); // <<< AQUI: usa os mesmos eventos do contexto
   const [currentDate, setCurrentDate] = useState(() => normalizeDate(new Date()));
+  const [selectedEventoDetail, setSelectedEventoDetail] = useState<Evento | null>(null);
+
+  const { pacotes } = usePacotesContext();
+  const { adicionais } = useAdicionaisContext();
+  const { equipes } = useEquipesContext();
 
   // Normaliza eventos do contexto
   const eventosProcessados = useMemo<EventoCalendario[]>(() => {
@@ -131,6 +139,42 @@ export default function Calendario() {
       default:
         return "bg-primary text-primary-foreground";
     }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmado': return 'bg-green-100 text-green-800';
+      case 'pendente': return 'bg-yellow-100 text-yellow-800';
+      case 'cancelado': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPacoteById = (id?: string) =>
+    id ? pacotes.find(p => p.id === id) : undefined;
+
+  const getEquipeById = (id?: string) =>
+    id ? equipes.find(e => e.id === id) : undefined;
+
+  const calcularTotalAdicionalEvento = (
+    adicional: (typeof adicionais)[number],
+    evento: Evento
+  ) => {
+    const convidados = evento.convidados ?? 0;
+
+    if (adicional.modelo === "valor_festa") {
+      return adicional.valor;
+    }
+
+    if (adicional.modelo === "valor_unidade") {
+      const qtdItem = evento.adicionaisQuantidade?.find(
+        q => q.adicionalId === adicional.id
+      );
+      const qtd = qtdItem?.quantidade ?? 0;
+      return adicional.valor * qtd;
+    }
+
+    return adicional.valor * convidados;
   };
 
   // Mini calendário: mês atual baseado em currentDate
@@ -306,12 +350,27 @@ export default function Calendario() {
                     .map((ev) => (
                       <div
                         key={ev.id}
-                        className="flex items-center gap-4 p-3 border border-blue-200 rounded-lg hover:shadow-md hover:border-blue-400 bg-white transition-all"
+                        className={`flex items-center gap-4 p-3 border rounded-lg hover:shadow-md transition-all cursor-pointer ${
+                          (() => {
+                            const totalRecebido = (ev.pagamentos || []).reduce((sum, p) => sum + p.valor, 0);
+                            const estaPago = Math.abs(totalRecebido - ev.valor) < 0.01;
+                            return estaPago
+                              ? "border-green-300 hover:border-green-400 bg-white"
+                              : "border-blue-200 hover:border-blue-400 bg-white";
+                          })()
+                        }`}
+                        onClick={() => setSelectedEventoDetail(ev)}
                       >
                         <div
-                          className={`w-4 h-4 rounded-full flex-shrink-0 ${getTipoColor(
-                            ev.tipo
-                          ).split(" ")[0]}`}
+                          className={`w-4 h-4 rounded-full flex-shrink-0 ${
+                            (() => {
+                              const totalRecebido = (ev.pagamentos || []).reduce((sum, p) => sum + p.valor, 0);
+                              const estaPago = Math.abs(totalRecebido - ev.valor) < 0.01;
+                              return estaPago
+                                ? "bg-green-500"
+                                : getTipoColor(ev.tipo).split(" ")[0];
+                            })()
+                          }`}
                         ></div>
                         <div className="flex-1 min-w-0">
                           <div className="font-semibold text-slate-800">
@@ -356,6 +415,17 @@ export default function Calendario() {
                               {ev.status}
                             </Badge>
                           )}
+                          {(() => {
+                            const totalRecebido = (ev.pagamentos || []).reduce((sum, p) => sum + p.valor, 0);
+                            if (Math.abs(totalRecebido - ev.valor) < 0.01) {
+                              return (
+                                <Badge className="bg-green-100 text-green-800 border-green-300 text-xs">
+                                  ✓ Pago
+                                </Badge>
+                              );
+                            }
+                            return null;
+                          })()}
                         </div>
                       </div>
                     ))}
@@ -448,6 +518,364 @@ export default function Calendario() {
           </Card>
         </div>
       </div>
+
+      {selectedEventoDetail && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-h-[90vh] overflow-y-auto border-l-4 border-l-blue-600 shadow-lg max-w-2xl">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-white border-b border-blue-200 sticky top-0">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-xl flex items-center gap-3">
+                    <span>{selectedEventoDetail.titulo}</span>
+                    <Badge className={getStatusColor(selectedEventoDetail.status)}>
+                      {selectedEventoDetail.status}
+                    </Badge>
+                    <Badge className={`${getTipoColor(selectedEventoDetail.tipo).split(" ")[0]} text-white`}>
+                      {selectedEventoDetail.tipo}
+                    </Badge>
+                    {(() => {
+                      const totalRecebido = (selectedEventoDetail.pagamentos || []).reduce((sum, p) => sum + p.valor, 0);
+                      if (Math.abs(totalRecebido - selectedEventoDetail.valor) < 0.01) {
+                        return (
+                          <Badge className="bg-green-100 text-green-800 border-green-300">
+                            ✓ Pago
+                          </Badge>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    <span>{format(parseISO(selectedEventoDetail.data), "dd/MM/yyyy", { locale: ptBR })} • </span>
+                    <span>{selectedEventoDetail.horaInicio}{selectedEventoDetail.horaFim && ` - ${selectedEventoDetail.horaFim}`}</span>
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedEventoDetail(null)}
+                  className="text-slate-500 hover:text-slate-700"
+                >
+                  <X size={20} />
+                </Button>
+              </div>
+            </CardHeader>
+
+            <CardContent className="pt-6 space-y-6">
+              {/* Informações principais */}
+              <div className="rounded-lg border bg-slate-50/60 p-3 space-y-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Informações principais
+                </h3>
+                <div>
+                  <span className="font-medium text-foreground">Cliente: </span>
+                  {selectedEventoDetail.clienteNome}
+                </div>
+                {selectedEventoDetail.convidados !== undefined && (
+                  <div>
+                    <span className="font-medium text-foreground">Convidados: </span>
+                    {selectedEventoDetail.convidados}
+                  </div>
+                )}
+                {selectedEventoDetail.decoracao && (
+                  <div>
+                    <span className="font-medium text-foreground">Decoração: </span>
+                    {selectedEventoDetail.decoracao}
+                  </div>
+                )}
+              </div>
+
+              {/* Aniversariantes */}
+              {selectedEventoDetail.aniversariantes &&
+                selectedEventoDetail.aniversariantes.length > 0 && (
+                  <div className="rounded-lg border bg-slate-50/60 p-3">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+                      Aniversariantes / Homenageados
+                    </h3>
+                    <ul className="space-y-1 text-sm">
+                      {selectedEventoDetail.aniversariantes.map((a, idx) => (
+                        <li
+                          key={idx}
+                          className="flex items-center justify-between border rounded px-2 py-1 bg-white/70"
+                        >
+                          <span className="font-medium">{a.nome}</span>
+                          {a.idade !== undefined && (
+                            <span className="text-xs text-muted-foreground">
+                              {a.idade} anos
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+              {/* Proposta */}
+              {(() => {
+                const pacote = getPacoteById(selectedEventoDetail.pacoteId);
+                if (!pacote) return null;
+                return (
+                  <div className="rounded-lg border bg-slate-50/60 p-3 space-y-2">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Proposta
+                    </h3>
+                    <div>
+                      <span className="font-medium text-foreground">{pacote.nome}</span>
+                      <div className="text-xs text-muted-foreground mt-1 space-y-0.5 ml-1">
+                        <div>• Duração: {pacote.duracaoHoras}h</div>
+                        <div>• Convidados base: {pacote.convidadosBase}</div>
+                        <div>
+                          • Valor base: R$ {pacote.valorBase.toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </div>
+                        <div>
+                          • Valor por pessoa: R$ {pacote.valorPorPessoa.toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Equipe */}
+              {(() => {
+                const equipe = getEquipeById(selectedEventoDetail.equipeId);
+                if (!equipe && !selectedEventoDetail.equipeProfissionais?.length) return null;
+
+                return (
+                  <div className="rounded-lg border bg-slate-50/60 p-3 space-y-2">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Equipe
+                    </h3>
+                    {equipe && (
+                      <div>
+                        <span className="font-medium text-foreground">Equipe principal: </span>
+                        {equipe.nome}
+                      </div>
+                    )}
+                    {selectedEventoDetail.equipeProfissionais &&
+                      selectedEventoDetail.equipeProfissionais.length > 0 && (
+                        <div className="mt-1">
+                          <span className="font-medium text-foreground">
+                            Profissionais:
+                          </span>
+                          <ul className="list-disc list-inside mt-1 space-y-1 text-xs">
+                            {selectedEventoDetail.equipeProfissionais.map((p) => (
+                              <li key={p.id}>
+                                {p.nome}{" "}
+                                <span className="text-muted-foreground">
+                                  (Qtd.: {p.quantidade})
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                  </div>
+                );
+              })()}
+
+              {/* Adicionais */}
+              {selectedEventoDetail.adicionaisIds &&
+                selectedEventoDetail.adicionaisIds.length > 0 && (
+                  <div className="rounded-lg border bg-slate-50/60 p-3 space-y-2">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Adicionais contratados
+                    </h3>
+                    <ul className="space-y-2 text-xs">
+                      {selectedEventoDetail.adicionaisIds.map((adicionalId) => {
+                        const adicional = adicionais.find((a) => a.id === adicionalId);
+                        if (!adicional) return null;
+
+                        const obsItem = selectedEventoDetail.adicionaisObservacoes?.find(
+                          (o) => o.adicionalId === adicionalId
+                        );
+                        const qtdItem = selectedEventoDetail.adicionaisQuantidade?.find(
+                          (q) => q.adicionalId === adicionalId
+                        );
+                        const totalAdicional = calcularTotalAdicionalEvento(
+                          adicional,
+                          selectedEventoDetail
+                        );
+
+                        const modeloLabel =
+                          adicional.modelo === "valor_pessoa"
+                            ? "por pessoa"
+                            : adicional.modelo === "valor_unidade"
+                            ? "por unidade"
+                            : "por festa";
+
+                        return (
+                          <li
+                            key={adicionalId}
+                            className="rounded border bg-white/80 px-2 py-1.5"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="font-medium">{adicional.nome}</span>{" "}
+                                <span className="text-muted-foreground">
+                                  ({modeloLabel})
+                                </span>
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                R$ {totalAdicional.toLocaleString("pt-BR", {
+                                  minimumFractionDigits: 2,
+                                })}
+                              </div>
+                            </div>
+                            <div className="text-[11px] text-muted-foreground mt-0.5">
+                              Valor base: R$ {adicional.valor.toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                              })}
+                              {qtdItem && qtdItem.quantidade > 0 && (
+                                <> • Qtd.: {qtdItem.quantidade}</>
+                              )}
+                            </div>
+                            {obsItem?.observacao && (
+                              <div className="text-[11px] text-muted-foreground mt-0.5">
+                                Obs.: {obsItem.observacao}
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+
+              {/* Valores */}
+              <div className={`rounded-lg border p-3 space-y-2 ${
+                (() => {
+                  const totalRecebido = (selectedEventoDetail.pagamentos || []).reduce((sum, p) => sum + p.valor, 0);
+                  return Math.abs(totalRecebido - selectedEventoDetail.valor) < 0.01
+                    ? "bg-green-50/60 border-green-300"
+                    : "bg-slate-50/60";
+                })()
+              }`}>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Valores
+                </h3>
+                <div>
+                  <span className="font-medium text-foreground">Valor total: </span>
+                  <span className="font-bold text-blue-900">
+                    R$ {selectedEventoDetail.valor?.toLocaleString("pt-BR", { minimumFractionDigits: 2 }) || "0"}
+                  </span>
+                </div>
+                {selectedEventoDetail.valorEntrada && selectedEventoDetail.valorEntrada > 0 && (
+                  <div>
+                    <span className="font-medium text-foreground">Entrada: </span>
+                    <span className="font-bold text-blue-900">
+                      R$ {selectedEventoDetail.valorEntrada?.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
+                {selectedEventoDetail.pagamentos && selectedEventoDetail.pagamentos.length > 0 && (
+                  <>
+                    <div>
+                      <span className="font-medium text-foreground">Recebido: </span>
+                      <span className="font-bold text-green-700">
+                        R$ {selectedEventoDetail.pagamentos.reduce((sum, p) => sum + p.valor, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-foreground">Saldo: </span>
+                      <span className={`font-bold ${
+                        selectedEventoDetail.valor - selectedEventoDetail.pagamentos.reduce((sum, p) => sum + p.valor, 0) > 0
+                          ? "text-red-700"
+                          : "text-green-700"
+                      }`}>
+                        R$ {(selectedEventoDetail.valor - selectedEventoDetail.pagamentos.reduce((sum, p) => sum + p.valor, 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Pagamento */}
+              {selectedEventoDetail.formaPagamento && (
+                <div className="rounded-lg border bg-slate-50/60 p-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                    Forma de pagamento
+                  </h3>
+                  <p className="text-sm">{selectedEventoDetail.formaPagamento}</p>
+                </div>
+              )}
+
+              {/* Pagamentos registrados */}
+              {selectedEventoDetail.pagamentos && selectedEventoDetail.pagamentos.length > 0 && (
+                <div className="rounded-lg border bg-slate-50/60 p-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+                    Histórico de pagamentos
+                  </h3>
+                  {(() => {
+                    const totalRecebido = selectedEventoDetail.pagamentos.reduce((sum, p) => sum + p.valor, 0);
+                    const estaPago = Math.abs(totalRecebido - selectedEventoDetail.valor) < 0.01;
+                    
+                    return estaPago ? (
+                      <div className="p-3 bg-green-50 border border-green-300 rounded-lg mb-3">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 size={18} className="text-green-600" />
+                          <div>
+                            <div className="font-bold text-green-900">Evento 100% pago!</div>
+                            <div className="text-xs text-green-700">Todos os pagamentos foram recebidos.</div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+                  <ul className="space-y-1 text-xs">
+                    {selectedEventoDetail.pagamentos.map((pag) => (
+                      <li key={pag.id} className="flex justify-between border rounded px-2 py-1 bg-white/70">
+                        <div>
+                          <span className="font-medium">
+                            R$ {pag.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </span>
+                          <span className="text-muted-foreground ml-2">• {pag.metodo}</span>
+                          <span className="text-muted-foreground ml-2">• {format(parseISO(pag.data), "dd/MM/yyyy", { locale: ptBR })}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Observações */}
+              {selectedEventoDetail.observacoes && (
+                <div className="rounded-lg border bg-slate-50/60 p-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                    Observações
+                  </h3>
+                  <p className="text-sm whitespace-pre-line">
+                    {selectedEventoDetail.observacoes}
+                  </p>
+                </div>
+              )}
+
+              {/* Botões de ação */}
+              <div className="flex gap-2 justify-end pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedEventoDetail(null)}
+                >
+                  Fechar
+                </Button>
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => {
+                    navigate("/eventos", { state: { showForm: true } });
+                    setSelectedEventoDetail(null);
+                  }}
+                >
+                  Ir para Eventos
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

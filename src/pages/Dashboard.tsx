@@ -124,22 +124,51 @@ export default function Dashboard() {
                 {proximosEventos.map(evento => (
                   <div
                     key={evento.id}
-                    className="p-3 border border-blue-200 rounded-lg bg-gradient-to-r from-blue-50 to-white hover:shadow-md transition"
+                    className={`p-3 border rounded-lg hover:shadow-md transition ${
+                      (() => {
+                        const totalRecebido = (evento.pagamentos || []).reduce((sum, p) => sum + p.valor, 0);
+                        const estaPago = Math.abs(totalRecebido - evento.valor) < 0.01;
+                        return estaPago
+                          ? "border-green-200 bg-gradient-to-r from-green-50 to-white"
+                          : "border-blue-200 bg-gradient-to-r from-blue-50 to-white";
+                      })()
+                    }`}
                   >
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-semibold text-blue-900">{evento.titulo}</h4>
+                        <h4 className={`font-semibold ${
+                          (() => {
+                            const totalRecebido = (evento.pagamentos || []).reduce((sum, p) => sum + p.valor, 0);
+                            const estaPago = Math.abs(totalRecebido - evento.valor) < 0.01;
+                            return estaPago ? "text-green-900" : "text-blue-900";
+                          })()
+                        }`}>
+                          {evento.titulo}
+                        </h4>
                         <p className="text-xs text-slate-600 mt-1">
                           📅 {new Date(evento.data).toLocaleDateString('pt-BR')} às {evento.horaInicio}
                         </p>
                       </div>
-                      <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                        evento.status === 'confirmado' 
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {evento.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                          evento.status === 'confirmado' 
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {evento.status}
+                        </span>
+                        {(() => {
+                          const totalRecebido = (evento.pagamentos || []).reduce((sum, p) => sum + p.valor, 0);
+                          if (Math.abs(totalRecebido - evento.valor) < 0.01) {
+                            return (
+                              <span className="text-xs font-semibold px-2 py-1 rounded bg-green-100 text-green-700">
+                                ✓ Pago
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
                     </div>
                   </div>
                 ))}
