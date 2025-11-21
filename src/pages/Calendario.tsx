@@ -163,20 +163,21 @@ export default function Calendario() {
   }, [eventosProcessados, currentDate]);
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Calendário</h1>
-          <p className="text-muted-foreground">
-            Visualize os eventos cadastrados na semana
-          </p>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-foreground">Calendário</h1>
+        <p className="text-muted-foreground mt-2">
+          Visualize os eventos cadastrados na semana
+        </p>
+      </div>
+
+      <div className="flex justify-end mb-8">
         <Button
-          className="bg-primary hover:bg-primary-hover text-primary-foreground"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 flex items-center gap-2"
           onClick={() => navigate("/eventos", { state: { showForm: true } })}
         >
-          <Plus size={16} className="mr-2" />
+          <Plus size={18} />
           Cadastrar Evento
         </Button>
       </div>
@@ -184,17 +185,18 @@ export default function Calendario() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Calendário semanal */}
         <div className="lg:col-span-3">
-          <Card>
-            <CardHeader>
+          <Card className="border-l-4 border-l-blue-600 shadow-lg bg-white">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Calendar size={18} />
+                <CardTitle className="text-lg flex items-center gap-2 text-blue-900">
+                  <Calendar size={20} />
                   {capitalize(format(weekStart, "MMMM yyyy", { locale: ptBR }))}
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
                     onClick={() => navigateWeek("prev")}
                   >
                     <ChevronLeft size={16} />
@@ -202,6 +204,7 @@ export default function Calendario() {
                   <Button
                     variant="outline"
                     size="sm"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
                     onClick={() => navigateWeek("next")}
                   >
                     <ChevronRight size={16} />
@@ -209,13 +212,13 @@ export default function Calendario() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               {/* Cabeçalho dos dias */}
               <div className="grid grid-cols-7 gap-2 mb-4">
                 {dayLabels.map((label, index) => (
                   <div
                     key={index}
-                    className="text-center font-medium text-muted-foreground p-2 text-xs"
+                    className="text-center font-semibold text-blue-700 p-2 text-sm bg-blue-50 rounded border border-blue-200"
                   >
                     {label}
                   </div>
@@ -233,22 +236,26 @@ export default function Calendario() {
                   return (
                     <div
                       key={index}
-                      className={`min-h-28 border rounded-lg p-2 flex flex-col ${
-                        hasEventos ? "bg-muted/60" : ""
+                      className={`min-h-32 border-2 rounded-lg p-3 flex flex-col transition-all ${
+                        isToday
+                          ? "border-blue-500 bg-blue-50"
+                          : hasEventos
+                          ? "border-blue-300 bg-slate-50"
+                          : "border-slate-200 bg-white hover:border-blue-300"
                       }`}
                     >
                       {/* Dia */}
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between mb-2">
                         <span
-                          className={`text-sm font-semibold ${
-                            isToday ? "text-primary" : "text-foreground"
+                          className={`text-sm font-bold ${
+                            isToday ? "text-blue-600" : "text-slate-700"
                           }`}
                         >
                           {format(day, "d")}
                         </span>
                         {hasEventos && (
-                          <span className="text-[10px] px-1 py-0.5 rounded-full bg-primary text-primary-foreground">
-                            {eventosDia.length} evt
+                          <span className="text-[10px] px-2 py-1 rounded-full bg-blue-600 text-white font-semibold">
+                            {eventosDia.length}
                           </span>
                         )}
                       </div>
@@ -260,17 +267,15 @@ export default function Calendario() {
                         {eventosDia.map((evento) => (
                           <div
                             key={evento.id}
-                            className={`text-[10px] sm:text-xs px-1 py-0.5 rounded text-center ${getTipoColor(
+                            className={`text-[10px] sm:text-xs px-2 py-1 rounded font-semibold text-center truncate ${getTipoColor(
                               evento.tipo
                             )}`}
                             title={`${evento.titulo ?? ""} - ${
                               evento.horaInicio ?? ""
                             }`}
                           >
-                            <span className="font-semibold mr-1">
-                              {evento.horaInicio ?? "--:--"}
-                            </span>
-                            <span className="truncate inline-block max-w-full">
+                            <span className="mr-1">{evento.horaInicio ?? "--:--"}</span>
+                            <span className="hidden sm:inline truncate">
                               {evento.titulo ?? "Evento"}
                             </span>
                           </div>
@@ -282,8 +287,11 @@ export default function Calendario() {
               </div>
 
               {/* Lista dos eventos da semana */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Eventos desta semana</h3>
+              <div className="space-y-4 mt-8 pt-6 border-t-2 border-slate-200">
+                <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                  <Calendar size={18} className="text-blue-600" />
+                  Eventos desta semana
+                </h3>
                 <div className="space-y-2">
                   {eventosProcessados
                     .filter((ev) =>
@@ -296,48 +304,66 @@ export default function Calendario() {
                     .map((ev) => (
                       <div
                         key={ev.id}
-                        className="flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                        className="flex items-center gap-4 p-3 border border-blue-200 rounded-lg hover:shadow-md hover:border-blue-400 bg-white transition-all"
                       >
                         <div
-                          className={`w-3 h-3 rounded-full ${getTipoColor(
+                          className={`w-4 h-4 rounded-full flex-shrink-0 ${getTipoColor(
                             ev.tipo
-                          ).replace("text-primary-foreground", "")}`}
+                          ).split(" ")[0]}`}
                         ></div>
-                        <div className="flex-1">
-                          <div className="font-medium">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-slate-800">
                             {ev.titulo ?? "Evento"}
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {format(ev.dataDate, "dd/MM/yyyy")} •{" "}
-                            {ev.horaInicio ?? "--:--"}
-                            {ev.clienteNome ? ` • ${ev.clienteNome}` : ""}
+                          <div className="text-xs text-slate-600">
+                            <span className="font-medium">
+                              {format(ev.dataDate, "dd/MM/yyyy")}
+                            </span>
+                            {" • "}
+                            <span>{ev.horaInicio ?? "--:--"}</span>
+                            {ev.clienteNome && (
+                              <>
+                                {" • "}
+                                <span className="font-medium">{ev.clienteNome}</span>
+                              </>
+                            )}
                           </div>
                         </div>
-                        {ev.tipo && (
-                          <Badge variant="secondary" className="text-xs">
-                            {ev.tipo}
-                          </Badge>
-                        )}
-                        {ev.status && (
-                          <Badge
-                            variant={
-                              ev.status === "confirmado"
-                                ? "default"
-                                : "secondary"
-                            }
-                            className="text-xs"
-                          >
-                            {ev.status}
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {ev.tipo && (
+                            <Badge
+                              variant="secondary"
+                              className="text-xs bg-blue-100 text-blue-800"
+                            >
+                              {ev.tipo}
+                            </Badge>
+                          )}
+                          {ev.status && (
+                            <Badge
+                              variant={
+                                ev.status === "confirmado"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                              className={`text-xs ${
+                                ev.status === "confirmado"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {ev.status}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     ))}
                   {eventosProcessados.filter((ev) =>
                     weekDays.some((day) => isSameDay(ev.dataDate, day))
                   ).length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      Nenhum evento cadastrado nesta semana.
-                    </p>
+                    <div className="text-center py-8 text-slate-500">
+                      <Calendar size={32} className="mx-auto mb-2 text-slate-300" />
+                      <p className="text-sm">Nenhum evento cadastrado nesta semana.</p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -347,22 +373,20 @@ export default function Calendario() {
 
         {/* Sidebar: mini calendário */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Calendar size={16} />
-                  {capitalize(format(currentDate, "MMMM yyyy", { locale: ptBR }))}
-                </CardTitle>
-              </div>
+          <Card className="border-l-4 border-l-blue-500 shadow-lg bg-white">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-blue-200">
+              <CardTitle className="text-base flex items-center gap-2 text-blue-900">
+                <Calendar size={18} />
+                {capitalize(format(currentDate, "MMMM yyyy", { locale: ptBR }))}
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="grid grid-cols-7 gap-1 text-center text-xs">
                 {/* cabeçalho D S T Q Q S S */}
                 {miniWeekLabels.map((label, idx) => (
                   <div
                     key={idx}
-                    className="p-1 font-medium text-muted-foreground"
+                    className="p-1 font-bold text-blue-700 text-xs"
                   >
                     {label}
                   </div>
@@ -390,17 +414,33 @@ export default function Calendario() {
                   return (
                     <div
                       key={day}
-                      className={`relative flex flex-col items-center justify-center p-1 text-xs rounded cursor-default ${
-                        isTodayInMonth ? "font-bold text-primary" : "text-foreground"
+                      className={`relative flex flex-col items-center justify-center p-2 text-xs rounded-lg transition-all cursor-default font-medium ${
+                        isTodayInMonth
+                          ? "text-white bg-blue-600"
+                          : hasEvent
+                          ? "text-blue-700 bg-blue-50 border border-blue-300"
+                          : "text-slate-700 hover:bg-slate-100"
                       }`}
                     >
                       <span>{day}</span>
-                      {hasEvent && (
-                        <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-blue-500" />
+                      {hasEvent && !isTodayInMonth && (
+                        <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-blue-600" />
                       )}
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Legenda */}
+              <div className="mt-6 pt-4 border-t border-slate-200 space-y-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                  <span className="text-slate-700">Hoje</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span className="text-slate-700">Com eventos</span>
+                </div>
               </div>
             </CardContent>
           </Card>
