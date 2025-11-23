@@ -126,6 +126,10 @@ export default function Calendario() {
     setCurrentDate(normalizeDate(newDate));
   };
 
+  const goToToday = () => {
+    setCurrentDate(normalizeDate(new Date()));
+  };
+
   const getTipoColor = (tipo?: string) => {
     switch (tipo) {
       case "festa":
@@ -175,6 +179,127 @@ export default function Calendario() {
     }
 
     return adicional.valor * convidados;
+  };
+
+  const exportarParaGoogleCalendar = (evento: Evento) => {
+    const pacote = getPacoteById(evento.pacoteId);
+    
+    // Monta a descrição detalhada
+    let descricao = `📋 DETALHES DO EVENTO\n\n`;
+    
+    // Cliente e informações básicas
+    descricao += `👤 Cliente: ${evento.clienteNome}\n`;
+    if (evento.convidados) descricao += `👥 Convidados: ${evento.convidados}\n`;
+    if (evento.decoracao) descricao += `🎨 Decoração: ${evento.decoracao}\n`;
+    
+    // Aniversariantes
+    if (evento.aniversariantes && evento.aniversariantes.length > 0) {
+      descricao += `\n🎂 ANIVERSARIANTES / HOMENAGEADOS:\n`;
+      evento.aniversariantes.forEach(a => {
+        descricao += `   • ${a.nome}`;
+        if (a.idade !== undefined) descricao += ` (${a.idade} anos)`;
+        descricao += `\n`;
+      });
+    }
+    
+    // Proposta
+    if (pacote) {
+      descricao += `\n📦 PROPOSTA:\n`;
+      descricao += `   • Pacote: ${pacote.nome}\n`;
+      descricao += `   • Duração: ${pacote.duracaoHoras}h\n`;
+      descricao += `   • Convidados base: ${pacote.convidadosBase}\n`;
+      descricao += `   • Valor base: R$ ${pacote.valorBase.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+      descricao += `   • Valor por pessoa: R$ ${pacote.valorPorPessoa.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+    }
+    
+    // Adicionais
+    if (evento.adicionaisIds && evento.adicionaisIds.length > 0) {
+      descricao += `\n➕ ADICIONAIS CONTRATADOS:\n`;
+      evento.adicionaisIds.forEach(adicionalId => {
+        const adicional = adicionais.find(a => a.id === adicionalId);
+        if (adicional) {
+          const totalAdicional = calcularTotalAdicionalEvento(adicional, evento);
+          const modeloLabel = adicional.modelo === "valor_pessoa" ? "por pessoa" : 
+                             adicional.modelo === "valor_unidade" ? "por unidade" : "por festa";
+          descricao += `   • ${adicional.nome} (${modeloLabel}): R$ ${totalAdicional.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+          
+          const qtdItem = evento.adicionaisQuantidade?.find(q => q.adicionalId === adicionalId);
+          if (qtdItem && qtdItem.quantidade > 0) {
+            descricao += `     Qtd.: ${qtdItem.quantidade}\n`;
+          }
+          
+          const obsItem = evento.adicionaisObservacoes?.find(o => o.adicionalId === adicionalId);
+          if (obsItem?.observacao) {
+            descricao += `     Obs.: ${obsItem.observacao}\n`;
+          }
+        }
+      });
+    }
+    
+    // Valores
+    descricao += `\n💰 VALORES:\n`;
+    descricao += `   • Valor total: R$ ${evento.valor?.toLocaleString("pt-BR", { minimumFractionDigits: 2 }) || "0"}\n`;
+    if (evento.valorEntrada && evento.valorEntrada > 0) {
+      descricao += `   • Entrada: R$ ${evento.valorEntrada.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+    }
+    if (evento.pagamentos && evento.pagamentos.length > 0) {
+      const totalRecebido = evento.pagamentos.reduce((sum, p) => sum + p.valor, 0);
+      descricao += `   • Recebido: R$ ${totalRecebido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+      descricao += `   • Saldo: R$ ${(evento.valor - totalRecebido).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+    }
+    if (evento.formaPagamento) {
+      descricao += `   • Forma de pagamento: ${evento.formaPagamento}\n`;
+    }
+    
+    // Observações
+    if (evento.observacoes) {
+      descricao += `\n📝 OBSERVAÇÕES:\n${evento.observacoes}\n`;
+    }
+    
+    // Formata data e hora para o Google Calendar
+    const dataEvento = parseISO(evento.data);
+    const { h: hInicio, m: mInicio } = parseHoraEvento(evento.horaInicio);
+    const dataInicio = new Date(dataEvento);
+    dataInicio.setHours(hInicio, mInicio, 0, 0);
+    
+    // Calcula hora de término
+    let dataFim = new Date(dataInicio);
+    
+    if (evento.horaFim) {
+      // Se horaFim está cadastrada, usa ela
+      const { h: hFim, m: mFim } = parseHoraEvento(evento.horaFim);
+      dataFim.setHours(hFim, mFim, 0, 0);
+      
+      // Se a hora de fim for menor que a de início, assume que é no dia seguinte
+      if (dataFim <= dataInicio) {
+        dataFim.setDate(dataFim.getDate() + 1);
+      }
+    } else {
+      // Se não tem horaFim, usa a duração do pacote ou 4h padrão
+      const duracaoHoras = pacote?.duracaoHoras || 4;
+      dataFim.setHours(dataInicio.getHours() + duracaoHoras);
+    }
+    
+    // Formata datas no formato ISO sem separadores (Google Calendar)
+    const formatarDataGoogle = (data: Date) => {
+      const ano = data.getFullYear();
+      const mes = String(data.getMonth() + 1).padStart(2, '0');
+      const dia = String(data.getDate()).padStart(2, '0');
+      const hora = String(data.getHours()).padStart(2, '0');
+      const minuto = String(data.getMinutes()).padStart(2, '0');
+      return `${ano}${mes}${dia}T${hora}${minuto}00`;
+    };
+    
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: evento.titulo || 'Evento',
+      dates: `${formatarDataGoogle(dataInicio)}/${formatarDataGoogle(dataFim)}`,
+      details: descricao,
+      location: 'Salão de Festas', // Você pode personalizar ou usar um campo do evento
+    });
+    
+    const url = `https://calendar.google.com/calendar/render?${params.toString()}`;
+    window.open(url, '_blank');
   };
 
   // Mini calendário: mês atual baseado em currentDate
@@ -253,6 +378,13 @@ export default function Calendario() {
                     onClick={() => navigateWeek("next")}
                   >
                     <ChevronRight size={16} />
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                    onClick={goToToday}
+                  >
+                    Hoje
                   </Button>
                 </div>
               </div>
@@ -861,6 +993,14 @@ export default function Calendario() {
                   onClick={() => setSelectedEventoDetail(null)}
                 >
                   Fechar
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                  onClick={() => exportarParaGoogleCalendar(selectedEventoDetail)}
+                >
+                  <Calendar size={16} className="mr-2" />
+                  Exportar para Google
                 </Button>
                 <Button
                   className="bg-blue-600 hover:bg-blue-700 text-white"

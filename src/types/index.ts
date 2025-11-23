@@ -100,3 +100,11 @@ export interface Pagamento {
 //   dataAssinatura: string;
 //   observacoes?: string;
 // }
+
+export interface Configuracoes {
+  id: string;
+  nomeSalao: string;
+  senhaHash?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}

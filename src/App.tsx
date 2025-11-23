@@ -9,6 +9,7 @@ import { PacotesProvider } from "@/contexts/PacotesContext";
 import { AdicionaisProvider } from "@/contexts/AdicionaisContext";
 import { EquipesProvider } from "@/contexts/EquipesContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ConfiguracoesProvider } from "@/contexts/ConfiguracoesContext";
 import Dashboard from "./pages/Dashboard";
 import Calendario from "./pages/Calendario";
 import Eventos from "./pages/Eventos";
@@ -16,6 +17,7 @@ import Pacotes from "./pages/Pacotes";
 import Clientes from "./pages/Clientes";
 import Relatorios from "./pages/Relatorios";
 import Ajuda from "./pages/Ajuda";
+import Configuracoes from "./pages/Configuracoes";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 
@@ -47,6 +49,7 @@ function PrivateRoutes() {
         <Route path="/clientes" element={<Clientes />} />
         <Route path="/relatorios" element={<Relatorios />} />
         <Route path="/ajuda" element={<Ajuda />} />
+        <Route path="/configuracoes" element={<Configuracoes />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
@@ -58,29 +61,31 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <AppProvider>
-          <PacotesProvider>
-            <AdicionaisProvider>
-              <EquipesProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter
-                  future={{
-                    v7_startTransition: true,
-                    v7_relativeSplatPath: true,
-                  }}
-                >
-                  <Routes>
-                    {/* rota pública */}
-                    <Route path="/login" element={<Login />} />
-                    {/* tudo que não é /login passa pelo fluxo privado */}
-                    <Route path="/*" element={<PrivateRoutes />} />
-                  </Routes>
-                </BrowserRouter>
-              </EquipesProvider>
-            </AdicionaisProvider>
-          </PacotesProvider>
-        </AppProvider>
+        <ConfiguracoesProvider>
+          <AppProvider>
+            <PacotesProvider>
+              <AdicionaisProvider>
+                <EquipesProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter
+                    future={{
+                      v7_startTransition: true,
+                      v7_relativeSplatPath: true,
+                    }}
+                  >
+                    <Routes>
+                      {/* rota pública */}
+                      <Route path="/login" element={<Login />} />
+                      {/* tudo que não é /login passa pelo fluxo privado */}
+                      <Route path="/*" element={<PrivateRoutes />} />
+                    </Routes>
+                  </BrowserRouter>
+                </EquipesProvider>
+              </AdicionaisProvider>
+            </PacotesProvider>
+          </AppProvider>
+        </ConfiguracoesProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

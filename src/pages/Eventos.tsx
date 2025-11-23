@@ -586,8 +586,132 @@ export default function Eventos() {
     return adicional.valor * convidados;
   };
 
+  const exportarParaGoogleCalendar = (evento: Evento) => {
+    const pacote = getPacoteById(evento.pacoteId);
+    
+    // Monta a descrição detalhada
+    let descricao = `📋 DETALHES DO EVENTO\n\n`;
+    
+    // Cliente e informações básicas
+    descricao += `👤 Cliente: ${evento.clienteNome}\n`;
+    if (evento.convidados) descricao += `👥 Convidados: ${evento.convidados}\n`;
+    if (evento.decoracao) descricao += `🎨 Decoração: ${evento.decoracao}\n`;
+    
+    // Aniversariantes
+    if (evento.aniversariantes && evento.aniversariantes.length > 0) {
+      descricao += `\n🎂 ANIVERSARIANTES / HOMENAGEADOS:\n`;
+      evento.aniversariantes.forEach(a => {
+        descricao += `   • ${a.nome}`;
+        if (a.idade !== undefined) descricao += ` (${a.idade} anos)`;
+        descricao += `\n`;
+      });
+    }
+    
+    // Proposta
+    if (pacote) {
+      descricao += `\n📦 PROPOSTA:\n`;
+      descricao += `   • Pacote: ${pacote.nome}\n`;
+      descricao += `   • Duração: ${pacote.duracaoHoras}h\n`;
+      descricao += `   • Convidados base: ${pacote.convidadosBase}\n`;
+      descricao += `   • Valor base: R$ ${pacote.valorBase.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+      descricao += `   • Valor por pessoa: R$ ${pacote.valorPorPessoa.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+    }
+    
+    // Adicionais
+    if (evento.adicionaisIds && evento.adicionaisIds.length > 0) {
+      descricao += `\n➕ ADICIONAIS CONTRATADOS:\n`;
+      evento.adicionaisIds.forEach(adicionalId => {
+        const adicional = adicionais.find(a => a.id === adicionalId);
+        if (adicional) {
+          const totalAdicional = calcularTotalAdicionalEvento(adicional, evento);
+          const modeloLabel = adicional.modelo === "valor_pessoa" ? "por pessoa" : 
+                             adicional.modelo === "valor_unidade" ? "por unidade" : "por festa";
+          descricao += `   • ${adicional.nome} (${modeloLabel}): R$ ${totalAdicional.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+          
+          const qtdItem = evento.adicionaisQuantidade?.find(q => q.adicionalId === adicionalId);
+          if (qtdItem && qtdItem.quantidade > 0) {
+            descricao += `     Qtd.: ${qtdItem.quantidade}\n`;
+          }
+          
+          const obsItem = evento.adicionaisObservacoes?.find(o => o.adicionalId === adicionalId);
+          if (obsItem?.observacao) {
+            descricao += `     Obs.: ${obsItem.observacao}\n`;
+          }
+        }
+      });
+    }
+    
+    // Valores
+    descricao += `\n💰 VALORES:\n`;
+    descricao += `   • Valor total: R$ ${evento.valor?.toLocaleString("pt-BR", { minimumFractionDigits: 2 }) || "0"}\n`;
+    if (evento.valorEntrada && evento.valorEntrada > 0) {
+      descricao += `   • Entrada: R$ ${evento.valorEntrada.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+    }
+    if (evento.pagamentos && evento.pagamentos.length > 0) {
+      const totalRecebido = evento.pagamentos.reduce((sum, p) => sum + p.valor, 0);
+      descricao += `   • Recebido: R$ ${totalRecebido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+      descricao += `   • Saldo: R$ ${(evento.valor - totalRecebido).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
+    }
+    if (evento.formaPagamento) {
+      descricao += `   • Forma de pagamento: ${evento.formaPagamento}\n`;
+    }
+    
+    // Observações
+    if (evento.observacoes) {
+      descricao += `\n📝 OBSERVAÇÕES:\n${evento.observacoes}\n`;
+    }
+    
+    // Formata data e hora para o Google Calendar
+    const dataEvento = parseISO(evento.data);
+    const parseHora = (raw: string | undefined): { h: number; m: number } => {
+      if (!raw) return { h: 0, m: 0 };
+      const [hStr, mStr] = raw.trim().split(":");
+      return { h: Number(hStr ?? 0), m: Number(mStr ?? 0) };
+    };
+
+    const { h: hInicio, m: mInicio } = parseHora(evento.horaInicio);
+    const dataInicio = new Date(dataEvento);
+    dataInicio.setHours(hInicio, mInicio, 0, 0);
+    
+    // Calcula hora de término
+    let dataFim = new Date(dataInicio);
+    
+    if (evento.horaFim) {
+      const { h: hFim, m: mFim } = parseHora(evento.horaFim);
+      dataFim.setHours(hFim, mFim, 0, 0);
+      
+      if (dataFim <= dataInicio) {
+        dataFim.setDate(dataFim.getDate() + 1);
+      }
+    } else {
+      const duracaoHoras = pacote?.duracaoHoras || 4;
+      dataFim.setHours(dataInicio.getHours() + duracaoHoras);
+    }
+    
+    // Formata datas no formato ISO sem separadores (Google Calendar)
+    const formatarDataGoogle = (data: Date) => {
+      const ano = data.getFullYear();
+      const mes = String(data.getMonth() + 1).padStart(2, '0');
+      const dia = String(data.getDate()).padStart(2, '0');
+      const hora = String(data.getHours()).padStart(2, '0');
+      const minuto = String(data.getMinutes()).padStart(2, '0');
+      return `${ano}${mes}${dia}T${hora}${minuto}00`;
+    };
+    
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: evento.titulo || 'Evento',
+      dates: `${formatarDataGoogle(dataInicio)}/${formatarDataGoogle(dataFim)}`,
+      details: descricao,
+      location: 'Salão de Festas',
+    });
+    
+    const url = `https://calendar.google.com/calendar/render?${params.toString()}`;
+    window.open(url, '_blank');
+  };
+
   const selectedEventoRef = useRef<HTMLDivElement>(null);
-  const showFormRef = useRef<HTMLDivElement>(null);
+  const showFormRef = useRef<HTMLDivElement>(null); // <<< ADICIONAR ESTA LINHA
 
   // Auto-scroll quando abre formulário
   useEffect(() => {
@@ -662,16 +786,16 @@ export default function Eventos() {
   };
 
   return (
-    <div className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <div className="p-4 md:p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground">Eventos</h1>
-        <p className="text-muted-foreground mt-2">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-4xl font-bold text-foreground">Eventos</h1>
+        <p className="text-sm md:text-base text-muted-foreground mt-2">
           Gerencie seus eventos e festas
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-8">
+      <div className="flex flex-wrap gap-3 mb-6 md:mb-8">
         <Button
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 flex items-center gap-2"
           onClick={() => {
@@ -1342,6 +1466,19 @@ export default function Eventos() {
                             Confirmar
                           </Button>
                         )}
+
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-blue-300 text-blue-700 hover:bg-blue-50 text-xs px-3 whitespace-nowrap"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            exportarParaGoogleCalendar(evento);
+                          }}
+                        >
+                          <Calendar size={14} className="mr-1" />
+                          Google
+                        </Button>
 
                         <Button
                           size="sm"

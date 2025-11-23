@@ -10,8 +10,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { usePacotesContext } from "@/contexts/PacotesContext";
 import { useAdicionaisContext } from "@/contexts/AdicionaisContext";
 import { Package, TrendingUp } from "lucide-react";
+import { useConfiguracoesContext } from "@/contexts/ConfiguracoesContext";
 
 export default function Dashboard() {
+  // ADICIONE TEMPORARIAMENTE ESTA LINHA NO INÍCIO:
+  const { configuracoes } = useConfiguracoesContext();
+  console.log("Dashboard - configuracoes:", configuracoes);
+  
   const navigate = useNavigate();
   const { clientes, eventos } = useAppContext();
   const { pacotes } = usePacotesContext();
@@ -68,15 +73,15 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <div className="p-4 md:p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground mt-2">Bem-vindo ao seu painel de controle</p>
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-4xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-sm md:text-base text-muted-foreground mt-2">Bem-vindo ao seu painel de controle</p>
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
           return (
