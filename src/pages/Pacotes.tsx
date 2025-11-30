@@ -234,7 +234,7 @@ export default function Pacotes() {
       nome: adicionalForm.nome.trim(),
       modelo: adicionalForm.modelo as "valor_pessoa" | "valor_unidade" | "valor_festa",
       valor: Number(adicionalForm.valor) || 0,
-      duracaoHoras: Number(adicionalForm.duracaoHoras) || 0,
+      duracaoHoras: adicionalForm.duracaoHoras === "" ? 0 : Number(adicionalForm.duracaoHoras) || 0,
       descricao: adicionalForm.descricao.trim() || undefined,
       observacao: adicionalForm.observacao || undefined,
     };
@@ -257,7 +257,7 @@ export default function Pacotes() {
       nome: a.nome,
       modelo: a.modelo,
       valor: String(a.valor),
-      duracaoHoras: String(a.duracaoHoras ?? 0),
+      duracaoHoras: String(a.duracaoHoras && a.duracaoHoras > 0 ? a.duracaoHoras : ""),
       descricao: a.descricao ?? "",
       observacao: !!a.observacao,
     });

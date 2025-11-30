@@ -21,6 +21,7 @@ export type Adicional = {
   descricao?: string | null;
   modelo: "valor_pessoa" | "valor_unidade" | "valor_festa";
   valor: number;
+  duracaoHoras?: number;
   observacao?: string | null;
   ativo: boolean;
   createdAt: string;
@@ -194,6 +195,32 @@ export async function updateClienteApi(
   } catch (err) {
     console.error("updateClienteApi - erro de autenticação:", err);
     return null;
+  }
+}
+
+export async function deleteClienteApi(id: string): Promise<void> {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      console.warn("[supabaseApi] deleteClienteApi chamado sem user autenticado");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("clientes")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("Erro ao remover cliente:", error);
+      throw error;
+    }
+
+    console.log("[deleteClienteApi] Cliente removido com sucesso:", id);
+  } catch (err) {
+    console.error("deleteClienteApi - erro de autenticação:", err);
+    throw err;
   }
 }
 
@@ -740,6 +767,7 @@ export async function getAdicionaisApi(): Promise<Adicional[]> {
       console.error("Erro ao buscar adicionais:", error);
       return [];
     }
+    
     return (
       data?.map((a: any) => ({
         id: a.id,
@@ -748,6 +776,7 @@ export async function getAdicionaisApi(): Promise<Adicional[]> {
         descricao: a.descricao,
         modelo: a.modelo,
         valor: a.valor,
+        duracaoHoras: a.duracao_horas ? Number(a.duracao_horas) : 0,
         observacao: a.observacao,
         ativo: a.ativo,
         createdAt: a.created_at,
@@ -775,9 +804,15 @@ export async function createAdicionalApi(
       descricao: adicional.descricao ?? null,
       modelo: adicional.modelo,
       valor: adicional.valor,
+      duracao_horas: adicional.duracaoHoras ?? 0,
       observacao: adicional.observacao ?? null,
       ativo: adicional.ativo,
     };
+
+    console.log("[createAdicionalApi] ENVIANDO PARA BANCO:", {
+      duracao_horas: payload.duracao_horas,
+      nome: payload.nome,
+    });
 
     const { data, error } = await supabase
       .from("adicionais")
@@ -786,9 +821,14 @@ export async function createAdicionalApi(
       .single();
 
     if (error || !data) {
-      console.error("Erro ao criar adicional:", error);
+      console.error("[createAdicionalApi] ERRO DO BANCO:", error);
       return null;
     }
+
+    console.log("[createAdicionalApi] RESPOSTA DO BANCO:", {
+      duracao_horas: data.duracao_horas,
+      nome: data.nome,
+    });
 
     return {
       id: data.id,
@@ -797,12 +837,13 @@ export async function createAdicionalApi(
       descricao: data.descricao ?? null,
       modelo: data.modelo,
       valor: Number(data.valor),
+      duracaoHoras: Number(data.duracao_horas) ?? 0,
       observacao: data.observacao ?? null,
       ativo: data.ativo,
       createdAt: data.created_at,
     };
   } catch (err) {
-    console.error("createAdicionalApi - erro de autenticação:", err);
+    console.error("[createAdicionalApi] EXCEPTION:", err);
     return null;
   }
 }
@@ -823,8 +864,15 @@ export async function updateAdicionalApi(
     if (patch.descricao !== undefined) dbPatch.descricao = patch.descricao ?? null;
     if (patch.modelo !== undefined) dbPatch.modelo = patch.modelo;
     if (patch.valor !== undefined) dbPatch.valor = patch.valor;
+    if (patch.duracaoHoras !== undefined) dbPatch.duracao_horas = patch.duracaoHoras ?? 0;
     if (patch.observacao !== undefined) dbPatch.observacao = patch.observacao ?? null;
     if (patch.ativo !== undefined) dbPatch.ativo = patch.ativo;
+
+    console.log("[updateAdicionalApi] ENVIANDO PARA BANCO:", {
+      id,
+      duracao_horas: dbPatch.duracao_horas,
+      nome: dbPatch.nome,
+    });
 
     const { data, error } = await supabase
       .from("adicionais")
@@ -835,9 +883,14 @@ export async function updateAdicionalApi(
       .single();
 
     if (error || !data) {
-      console.error("Erro ao atualizar adicional:", error);
+      console.error("[updateAdicionalApi] ERRO DO BANCO:", error);
       return null;
     }
+
+    console.log("[updateAdicionalApi] RESPOSTA DO BANCO:", {
+      duracao_horas: data.duracao_horas,
+      nome: data.nome,
+    });
 
     return {
       id: data.id,
@@ -846,13 +899,13 @@ export async function updateAdicionalApi(
       descricao: data.descricao ?? null,
       modelo: data.modelo,
       valor: Number(data.valor),
+      duracaoHoras: Number(data.duracao_horas) ?? 0,
       observacao: data.observacao ?? null,
       ativo: data.ativo,
       createdAt: data.created_at,
     };
   } catch (err) {
-
-    console.error("updateAdicionalApi - erro de autenticação:", err);
+    console.error("[updateAdicionalApi] EXCEPTION:", err);
     return null;
   }
 }

@@ -4,6 +4,7 @@ import {
   getClientesApi,
   createClienteApi,
   updateClienteApi,
+  deleteClienteApi,
   getEventosApi,
   createEventoApi,
   updateEventoApi,
@@ -82,8 +83,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteCliente = async (id: string) => {
-    // TODO: Implementar deleteClienteApi
-    console.warn("deleteCliente ainda não está implementado");
+    await deleteClienteApi(id);
     setClientes((prev) => prev.filter((c) => c.id !== id));
   };
 

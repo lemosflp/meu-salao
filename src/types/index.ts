@@ -108,3 +108,16 @@ export interface Configuracoes {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface Adicional {
+  id: string;
+  userId: string;
+  nome: string;
+  descricao?: string | null;
+  modelo: "valor_pessoa" | "valor_unidade" | "valor_festa";
+  valor: number;
+  duracaoHoras?: number;
+  observacao?: string | null;
+  ativo: boolean;
+  createdAt: string;
+}

@@ -10,6 +10,7 @@ type DbAdicional = {
   descricao: string | null;
   modelo: "valor_pessoa" | "valor_unidade" | "valor_festa";
   valor: number;
+  duracao_horas?: number;
   observacao: string | null;
   ativo: boolean;
   created_at: string;
@@ -23,6 +24,7 @@ export interface Adicional {
   descricao?: string;
   modelo: "valor_pessoa" | "valor_unidade" | "valor_festa";
   valor: number;
+  duracaoHoras?: number;
   observacao?: string;
   ativo: boolean;
   createdAt: string;
@@ -58,7 +60,7 @@ export const AdicionaisProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await supabase
         .from("adicionais")
         .select(
-          "id, user_id, nome, descricao, modelo, valor, observacao, ativo, created_at"
+          "id, user_id, nome, descricao, modelo, valor, duracao_horas, observacao, ativo, created_at"
         )
         .eq("user_id", user.id) // OK
         .order("created_at", { ascending: false });
@@ -76,6 +78,7 @@ export const AdicionaisProvider = ({ children }: { children: ReactNode }) => {
           descricao: a.descricao ?? undefined,
           modelo: a.modelo,
           valor: Number(a.valor),
+          duracaoHoras: a.duracao_horas ? Number(a.duracao_horas) : 0,
           observacao: a.observacao ?? undefined,
           ativo: a.ativo,
           createdAt: a.created_at,
@@ -98,20 +101,25 @@ export const AdicionaisProvider = ({ children }: { children: ReactNode }) => {
       descricao: data.descricao ?? null,
       modelo: data.modelo,
       valor: data.valor,
+      duracao_horas: data.duracaoHoras ?? 0,
       observacao: data.observacao ?? null,
       ativo: data.ativo,
     };
 
+    console.log("[AdicionaisContext] addAdicional payload:", payload);
+
     const { data: inserted, error } = await supabase
       .from("adicionais")
       .insert(payload)
-      .select("id, user_id, nome, descricao, modelo, valor, observacao, ativo, created_at")
+      .select("id, user_id, nome, descricao, modelo, valor, duracao_horas, observacao, ativo, created_at")
       .single();
 
     if (error) {
       console.error("[AdicionaisContext] Erro ao criar adicional:", error);
       throw error;
     }
+
+    console.log("[AdicionaisContext] Resposta do banco:", inserted);
 
     const a = inserted as DbAdicional;
 
@@ -123,6 +131,7 @@ export const AdicionaisProvider = ({ children }: { children: ReactNode }) => {
         descricao: a.descricao ?? undefined,
         modelo: a.modelo,
         valor: Number(a.valor),
+        duracaoHoras: a.duracao_horas ? Number(a.duracao_horas) : 0,
         observacao: a.observacao ?? undefined,
         ativo: a.ativo,
         createdAt: a.created_at,
@@ -140,21 +149,26 @@ export const AdicionaisProvider = ({ children }: { children: ReactNode }) => {
     if (data.descricao !== undefined) payload.descricao = data.descricao ?? null;
     if (data.modelo !== undefined) payload.modelo = data.modelo;
     if (data.valor !== undefined) payload.valor = data.valor;
+    if (data.duracaoHoras !== undefined) payload.duracao_horas = data.duracaoHoras ?? 0;
     if (data.observacao !== undefined) payload.observacao = data.observacao ?? null;
     if (data.ativo !== undefined) payload.ativo = data.ativo;
+
+    console.log("[AdicionaisContext] updateAdicional payload:", payload);
 
     const { data: updated, error } = await supabase
       .from("adicionais")
       .update(payload)
       .eq("id", id)
       .eq("user_id", user.id) // OK
-      .select("id, user_id, nome, descricao, modelo, valor, observacao, ativo, created_at")
+      .select("id, user_id, nome, descricao, modelo, valor, duracao_horas, observacao, ativo, created_at")
       .single();
 
     if (error) {
       console.error("Erro ao atualizar adicional:", error);
       throw error;
     }
+
+    console.log("[AdicionaisContext] Resposta do banco:", updated);
 
     const a = updated as DbAdicional;
 
@@ -168,6 +182,7 @@ export const AdicionaisProvider = ({ children }: { children: ReactNode }) => {
               descricao: a.descricao ?? undefined,
               modelo: a.modelo,
               valor: Number(a.valor),
+              duracaoHoras: a.duracao_horas ? Number(a.duracao_horas) : 0,
               observacao: a.observacao ?? undefined,
               ativo: a.ativo,
               createdAt: a.created_at,
