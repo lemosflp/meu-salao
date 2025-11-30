@@ -18,6 +18,7 @@ type AppContextValue = {
   eventos: Evento[];
   addCliente: (data: Omit<Cliente, "id" | "userId" | "createdAt">) => Promise<void>;
   updateCliente: (id: string, patch: Partial<Cliente>) => Promise<void>;
+  deleteCliente: (id: string) => Promise<void>;
   addEvento: (data: Omit<Evento, "id" | "userId">) => Promise<void>;
   updateEvento: (id: string, patch: Partial<Evento>) => Promise<void>;
   removeEvento: (id: string) => Promise<void>;
@@ -78,6 +79,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const atualizado = await updateClienteApi(id, patch);
     if (!atualizado) return;
     setClientes((prev) => prev.map((c) => (c.id === id ? atualizado : c)));
+  };
+
+  const deleteCliente = async (id: string) => {
+    // TODO: Implementar deleteClienteApi
+    console.warn("deleteCliente ainda não está implementado");
+    setClientes((prev) => prev.filter((c) => c.id !== id));
   };
 
   const addEvento = async (data: Omit<Evento, "id" | "userId">) => {
@@ -145,6 +152,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         eventos,
         addCliente,
         updateCliente,
+        deleteCliente,
         addEvento,
         updateEvento,
         removeEvento,

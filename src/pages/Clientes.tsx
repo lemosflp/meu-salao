@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Edit, Users } from "lucide-react";
+import { Search, Plus, Edit, Users, Trash2 } from "lucide-react";
 import { useAppContext } from "@/contexts/AppContext";
 import { Cliente } from "@/types";
 import { format, parseISO } from "date-fns";
@@ -13,7 +13,9 @@ import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Clientes() {
-  const { clientes, addCliente, updateCliente } = useAppContext() as any;
+  const context = useAppContext() as any;
+  const { clientes, addCliente, updateCliente } = context;
+  const deleteCliente = context.deleteCliente || context.removeCliente || context.excluirCliente;
   const [editingClienteId, setEditingClienteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -34,6 +36,8 @@ export default function Clientes() {
   const { toast } = useToast();
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'view' | 'edit'>('list');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [clienteToDelete, setClienteToDelete] = useState<Cliente | null>(null);
 
   const formRef = useRef<HTMLDivElement>(null);
   const detailRef = useRef<HTMLDivElement>(null);
@@ -219,6 +223,44 @@ export default function Clientes() {
     });
     setEditingClienteId(cliente.id as string);
     setShowForm(true);
+  };
+
+  const handleDeleteClick = (cliente: Cliente) => {
+    setClienteToDelete(cliente);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!clienteToDelete) return;
+    
+    if (!deleteCliente) {
+      toast({
+        title: "Erro",
+        description: "Função de deletar não está disponível no contexto.",
+        variant: "destructive",
+      });
+      console.error("deleteCliente não é uma função:", deleteCliente);
+      return;
+    }
+
+    try {
+      await deleteCliente(clienteToDelete.id as string);
+      toast({
+        title: "Cliente deletado com sucesso",
+        description: `${clienteToDelete.nome} ${clienteToDelete.sobrenome} foi removido.`,
+      });
+      setShowDeleteConfirm(false);
+      setClienteToDelete(null);
+      setSelectedCliente(null);
+      setViewMode('list');
+    } catch (error: any) {
+      console.error("Erro ao deletar cliente:", error);
+      toast({
+        title: "Erro ao deletar cliente",
+        description: error?.message || "Não foi possível remover o cliente.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -615,6 +657,49 @@ export default function Clientes() {
                   className="bg-primary hover:bg-primary-hover text-primary-foreground px-4"
                 >
                   Editar cadastro
+                </Button>
+                <Button
+                  onClick={() => handleDeleteClick(selectedCliente)}
+                  variant="destructive"
+                  className="px-4"
+                >
+                  <Trash2 size={16} className="mr-2" /> Deletar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Confirmação de exclusão */}
+      {showDeleteConfirm && clienteToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4 border-red-200">
+            <CardHeader className="bg-red-50 border-b border-red-200">
+              <CardTitle className="text-red-700">Confirmar exclusão</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <p className="text-sm text-foreground">
+                Tem certeza que deseja deletar <span className="font-bold">{clienteToDelete.nome} {clienteToDelete.sobrenome}</span>?
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setClienteToDelete(null);
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleConfirmDelete}
+                >
+                  Deletar cliente
                 </Button>
               </div>
             </CardContent>
